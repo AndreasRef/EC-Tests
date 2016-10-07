@@ -35,6 +35,7 @@ public:
     void dragEvent(ofDragInfo dragInfo);
     void gotMessage(ofMessage msg);
     
+    bool setClassifier( const int type );
     bool setRegressifier( const int type );
     
     //Create some variables for the demo
@@ -69,6 +70,66 @@ public:
                 break;
             case NEURAL_NET:
                 return "NEURAL_NET";
+                break;
+        }
+        return "UNKOWN_CLASSIFIER";
+    }
+    
+    
+    //CLASSIFICATION
+    
+    //Create some variables for the demo
+    ClassificationData trainingData_C;      		//This will store our training data
+    GestureRecognitionPipeline pipeline_C;        //This is a wrapper for our classifier and any pre/post processing modules
+    bool record_C;                                //This is a flag that keeps track of when we should record training data
+    bool drawInfo_C;
+    UINT trainingClassLabel_C;                    //This will hold the current label for when we are training the classifier
+    string infoText_C;                            //This string will be used to draw some info messages to the main app window
+    
+    ofxGrtTimeseriesPlot mouseDataPlot_C;
+    ofxGrtTimeseriesPlot predictionPlot_C;
+    
+    
+        enum ClassifierType{ ADABOOST=0, DECISION_TREE, KKN, GAUSSIAN_MIXTURE_MODEL, NAIVE_BAYES, MINDIST, RANDOM_FOREST_10, RANDOM_FOREST_100, RANDOM_FOREST_200, SOFTMAX, SVM_LINEAR, SVM_RBF, NUM_CLASSIFIERS };
+    int classifierType;
+    
+    string classifierTypeToString( const int type ){
+        switch( type ){
+            case ADABOOST:
+                return "ADABOOST";
+                break;
+            case DECISION_TREE:
+                return "DECISION_TREE";
+                break;
+            case KKN:
+                return "KKN";
+                break;
+            case GAUSSIAN_MIXTURE_MODEL:
+                return "GMM";
+                break;
+            case NAIVE_BAYES:
+                return "NAIVE_BAYES";
+                break;
+            case MINDIST:
+                return "MINDIST";
+                break;
+            case RANDOM_FOREST_10:
+                return "RANDOM_FOREST_10";
+                break;
+            case RANDOM_FOREST_100:
+                return "RANDOM_FOREST_100";
+                break;
+            case RANDOM_FOREST_200:
+                return "RANDOM_FOREST_200";
+                break;
+            case SOFTMAX:
+                return "SOFTMAX";
+                break;
+            case SVM_LINEAR:
+                return "SVM_LINEAR";
+                break;
+            case SVM_RBF:
+                return "SVM_RBF";
                 break;
         }
         return "UNKOWN_CLASSIFIER";

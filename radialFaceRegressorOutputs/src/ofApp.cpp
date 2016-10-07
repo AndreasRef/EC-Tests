@@ -13,8 +13,8 @@ void ofApp::setup(){
     
     largeFont.load("verdana.ttf", 12, true, true);
     largeFont.setLineHeight(14.0f);
-    smallFont.load("verdana.ttf", 10, true, true);
-    smallFont.setLineHeight(12.0f);
+    smallFont.load("verdana.ttf", 9, true, true);
+    smallFont.setLineHeight(10.0f);
     hugeFont.load("verdana.ttf", 36, true, true);
     hugeFont.setLineHeight(38.0f);
     
@@ -37,6 +37,23 @@ void ofApp::setup(){
     
     //set the default classifier
     setRegressifier( LINEAR_REGRESSION );
+    
+    
+    //CLASSIFICATION
+    //Initialize the training and info variables
+    infoText_C = "";
+    trainingClassLabel_C = 1;
+    record_C = false;
+    drawInfo_C = true;
+    
+    //The input to the training data will be the [x y] from the mouse, so we set the number of dimensions to 2
+    trainingData_C.setNumDimensions( 2 );
+    
+    //set the default classifier
+    ANBC naiveBayes;
+    naiveBayes.enableNullRejection( false );
+    naiveBayes.setNullRejectionCoeff( 3 );
+    pipeline_C.setClassifier( naiveBayes );
     
     
     
@@ -64,7 +81,7 @@ void ofApp::setup(){
     
     //GUI
     gui.setup();
-    gui.setPosition(ofGetWidth()-200, 4);
+    gui.setPosition(ofGetWidth()-200, 110);
 //    gui.setSize(300, 75);
 //    gui.setDefaultWidth(300);
 //    gui.setDefaultHeight(75);
@@ -119,20 +136,15 @@ void ofApp::update(){
         
         //GESTURES (5 values)
         if (gestureBool) {
-            
-
             trainingSample[0+RAWINPUTS*rawBool+ORIENTATIONINPUTS*orientationBool] = getGesture(RIGHT_EYE_OPENNESS);
             trainingSample[1+RAWINPUTS*rawBool+ORIENTATIONINPUTS*orientationBool] = getGesture(LEFT_EYE_OPENNESS);
             trainingSample[2+RAWINPUTS*rawBool+ORIENTATIONINPUTS*orientationBool] = getGesture(RIGHT_EYEBROW_HEIGHT);
             trainingSample[3+RAWINPUTS*rawBool+ORIENTATIONINPUTS*orientationBool] = getGesture(LEFT_EYEBROW_HEIGHT);
             trainingSample[4+RAWINPUTS*rawBool+ORIENTATIONINPUTS*orientationBool] = getGesture(MOUTH_HEIGHT);
 
-
         }
         
         
-        
-    
         //Update the training mode if needed
         if( trainingModeActive){
             
@@ -151,10 +163,7 @@ void ofApp::update(){
             }
             
             if( recordTrainingData ){
-                
-                
-
-                
+ 
                 VectorFloat targetVector(2);
                 targetVector[0] = val1;
                 targetVector[1] = val2;
@@ -186,15 +195,32 @@ void ofApp::update(){
         val2 = val2 + ( rawVal2 - val2 ) * (1- smoothing);
     }
     
+    
+    //CLASSIFICATION
+    VectorFloat trainingSample_C(2);
+    trainingSample_C[0] = ofGetMouseX();
+    trainingSample_C[1] = ofGetMouseY();
+    
+    //Update the data graph
+    //    mouseDataPlot.update(trainingSample );
+    
+    
+    //If we are recording training data, then add the current sample to the training data set
+    if( record_C ){
+        trainingData_C.addSample( trainingClassLabel_C, trainingSample_C );
+    }
+    
+    //If the pipeline has been trained, then run the prediction
+    if( pipeline_C.getTrained() ){
+        pipeline_C.predict( trainingSample_C );
+        predictionPlot_C.update( pipeline_C.getClassLikelihoods() );
+    }
 }
 
 //--------------------------------------------------------------
 void ofApp::draw(){
     
-    
     ofBackground(225, 225, 225);
-    
-    
     
     //FaceTracker draw
     ofSetColor(255);
@@ -263,33 +289,17 @@ void ofApp::draw(){
         
         ofFill();
         ofSetColor(100,100,100);
-        ofDrawRectangle( 5, 5, 265, 620 );
+        ofDrawRectangle( 5, 5, 290, 720 -8 );
         ofSetColor( 255, 255, 255 );
 
-        smallFont.drawString( "FACETRACKER2 REGRESSION EXAMPLE", textX, textY ); textY += textSpacer*2;
+        smallFont.drawString( "EYE CONDUCTOR ML EXAMPLE", textX, textY ); textY += textSpacer;
+        
+        smallFont.drawString( "Framerate : "+ofToString(ofGetFrameRate()), textX, textY ); textY += textSpacer;
+        smallFont.drawString( "Tracker thread framerate : "+ofToString(tracker.getThreadFps()), textX, textY ); textY += textSpacer;
+        textY += textSpacer;
+        
+        smallFont.drawString( "GLOBAL CONTROLS", textX, textY ); textY += textSpacer;
         smallFont.drawString( "[i]: Toogle Info", textX, textY ); textY += textSpacer;
-        
-        smallFont.drawString( "[r]: Record Sample", textX, textY ); textY += textSpacer;
-        smallFont.drawString( "[l]: Load Model", textX, textY ); textY += textSpacer;
-        smallFont.drawString( "[s]: Save Model", textX, textY ); textY += textSpacer;
-        smallFont.drawString( "[t]: Train Model", textX, textY ); textY += textSpacer;
-        smallFont.drawString( "[d]: Pause Model", textX, textY ); textY += textSpacer;
-        smallFont.drawString( "[c]: Clear Training Data", textX, textY ); textY += textSpacer;
-        textY += textSpacer;
-        
-        
-        smallFont.drawString( "Classifier: " + regressifierTypeToString( regressifierType ), textX, textY ); textY += textSpacer;
-        smallFont.drawString( "[tab]: Select Regressifier", textX, textY ); textY += textSpacer;
-        
-        smallFont.drawString( "Recording: " + ofToString( recordTrainingData ), textX, textY ); textY += textSpacer;
-        smallFont.drawString( "Num Samples: " + ofToString( trainingData.getNumSamples() ), textX, textY ); textY += textSpacer;
-        smallFont.drawString( "Prediction mode active: " + ofToString( predictionModeActive), textX, textY ); textY += textSpacer;
-        textY += textSpacer;
-        
-        ofSetColor(255,241,0);
-        smallFont.drawString( infoText, textX, textY ); textY += textSpacer;
-        ofSetColor(255);
-        
         smallFont.drawString( "[a] Input all raw points: "+ofToString(rawBool), textX, textY ); textY += textSpacer;
         smallFont.drawString( "[g] Input gestures: "+ofToString(gestureBool), textX, textY ); textY += textSpacer;
         smallFont.drawString( "[o] Input orientation: "+ofToString(orientationBool), textX, textY ); textY += textSpacer;
@@ -302,17 +312,74 @@ void ofApp::draw(){
         smallFont.drawString( "[v] draw video: "+ofToString(drawVideo), textX, textY ); textY += textSpacer;
         textY += textSpacer;
         
- 
-        
-        smallFont.drawString( "Framerate : "+ofToString(ofGetFrameRate()), textX, textY ); textY += textSpacer;
-        smallFont.drawString( "Tracker thread framerate : "+ofToString(tracker.getThreadFps()), textX, textY ); textY += textSpacer;
+        //REGRESSION
+        smallFont.drawString( "REGRESSION CONTROLS", textX, textY ); textY += textSpacer;
+        smallFont.drawString( "[r]: Record Sample", textX, textY ); textY += textSpacer;
+        smallFont.drawString( "[l]: Load Model", textX, textY ); textY += textSpacer;
+        smallFont.drawString( "[s]: Save Model", textX, textY ); textY += textSpacer;
+        smallFont.drawString( "[t]: Train Model", textX, textY ); textY += textSpacer;
+        smallFont.drawString( "[d]: Pause Model", textX, textY ); textY += textSpacer;
+        smallFont.drawString( "[c]: Clear Training Data", textX, textY ); textY += textSpacer;
+        smallFont.drawString( "[tab]: Select Regressifier", textX, textY ); textY += textSpacer;
         textY += textSpacer;
         
+        smallFont.drawString( "Regressifier: " + regressifierTypeToString( regressifierType ), textX, textY ); textY += textSpacer;
+        
+        smallFont.drawString( "Recording: " + ofToString( recordTrainingData ), textX, textY ); textY += textSpacer;
+        smallFont.drawString( "Num Samples: " + ofToString( trainingData.getNumSamples() ), textX, textY ); textY += textSpacer;
+        smallFont.drawString( "Prediction mode active: " + ofToString( predictionModeActive), textX, textY ); textY += textSpacer;
+        ofSetColor(255,241,0);
+        smallFont.drawString( infoText, textX, textY ); textY += textSpacer;
+        ofSetColor(255);
+        textY += textSpacer;
+        
+        
+        //CLASSIFICATION
+        smallFont.drawString( "CLASSIFICATION CONTROLS", textX, textY ); textY += textSpacer;
+        smallFont.drawString( "[0-9]: Set Class Label", textX, textY ); textY += textSpacer;
+        smallFont.drawString( "[R]: Record Sample", textX, textY ); textY += textSpacer;
+        smallFont.drawString( "[L]: Load Model", textX, textY ); textY += textSpacer;
+        smallFont.drawString( "[S]: Save Model", textX, textY ); textY += textSpacer;
+        smallFont.drawString( "[T]: Train Model", textX, textY ); textY += textSpacer;
+        smallFont.drawString( "[D]: Pause Model", textX, textY ); textY += textSpacer;
+        smallFont.drawString( "[C]: Clear Training Data", textX, textY ); textY += textSpacer;
+        smallFont.drawString( "[enter/return]: Select Classifier", textX, textY ); textY += textSpacer*2;
+        
+        smallFont.drawString( "Classifier: " + classifierTypeToString(classifierType), textX, textY ); textY += textSpacer;
+        smallFont.drawString( "Class Label: " + ofToString( trainingClassLabel_C ), textX, textY ); textY += textSpacer;
+        smallFont.drawString( "Recording: " + ofToString( record_C ), textX, textY ); textY += textSpacer;
+        smallFont.drawString( "Num Samples: " + ofToString( trainingData_C.getNumSamples() ), textX, textY ); textY += textSpacer;
+        ofSetColor(255,241,0);
+        smallFont.drawString( infoText_C, textX, textY ); textY += textSpacer;
+        ofSetColor(255);
+        textY += textSpacer;
         
         ofSetColor(0);
         smallFont.drawString( "INSTRUCTIONS regression: \n \n 1) Set the height and width of the output sliders 2) Press [r] to record some training samples containing your selected facial features (gestures/orientation/raw points) and output slider values. \n \n 3) Repeat step 1) and 2) with different output slider values and height and different facial expressions / head orientations \n \n 4) Move your face and see the changes in the output slider values based on your facial orientation and expression",  textX, 750 );
         
     }
+    
+    
+    //CLASSIFICATION
+    
+    int marginX = 5;
+    int marginY = 5;
+    int graphX = 300 ;
+    int graphY = marginY;
+    int graphW = ofGetWidth() - 305;
+    int graphH = 100;
+    float infoX = 760;
+    float infoW = 250;
+    
+    
+    if( pipeline_C.getTrained() ){
+        predictionPlot_C.draw( graphX, graphY, graphW, graphH ); graphY += graphH * 1.1;
+    }
+    
+    ofSetColor(0,0,0);
+    hugeFont.drawString(ofToString(pipeline_C.getPredictedClassLabel()), ofGetWidth()/2, ofGetHeight()/2);
+
+    
     gui.draw();
 }
 
@@ -323,6 +390,48 @@ void ofApp::keyPressed(int key){
     bool buildTexture = false;
     
     switch ( key) {
+            
+            //GENERAL
+        case 'g': //Toogle gesture inputs and update length of trainingInputs
+            gestureBool =! gestureBool;
+            trainingInputs = GESTUREINPUTS*gestureBool+ORIENTATIONINPUTS*orientationBool+RAWINPUTS*rawBool; //GESTUREINPUTS=5, ORIENTATIONINPUTS=9, RAWINPUTS=136
+            trainingData.setInputAndTargetDimensions( trainingInputs, 2 );
+            break;
+            
+        case 'o': //Toogle orientation inputs and update length of trainingInputs
+            orientationBool =! orientationBool;
+            trainingInputs = GESTUREINPUTS*gestureBool+ORIENTATIONINPUTS*orientationBool+RAWINPUTS*rawBool; //GESTUREINPUTS=5, ORIENTATIONINPUTS=9, RAWINPUTS=136
+            trainingData.setInputAndTargetDimensions( trainingInputs, 2 );
+            break;
+            
+        case 'a': //Toogle raw inputs and update length of trainingInputs
+            rawBool =! rawBool;
+            trainingInputs = GESTUREINPUTS*gestureBool+ORIENTATIONINPUTS*orientationBool+RAWINPUTS*rawBool; //GESTUREINPUTS=5, ORIENTATIONINPUTS=9, RAWINPUTS=136
+            trainingData.setInputAndTargetDimensions( trainingInputs, 2 );
+            break;
+            
+        case 'i':
+            drawInfo = !drawInfo;
+            break;
+            
+        case 'n':
+            drawNumbers = !drawNumbers;
+            break;
+            
+        case 'f':
+            drawFace = !drawFace;
+            break;
+            
+        case 'p':
+            drawPose = !drawPose;
+            break;
+            
+        case 'v':
+            drawVideo = !drawVideo;
+            break;
+
+            
+            //REGRESSION
         case 'r':
             predictionModeActive = false;
             trainingModeActive = true;
@@ -356,49 +465,44 @@ void ofApp::keyPressed(int key){
             infoText = "Training data cleared";
             break;
             
-        case 'g': //Toogle gesture inputs and update length of trainingInputs
-            gestureBool =! gestureBool;
-            trainingInputs = GESTUREINPUTS*gestureBool+ORIENTATIONINPUTS*orientationBool+RAWINPUTS*rawBool; //GESTUREINPUTS=5, ORIENTATIONINPUTS=9, RAWINPUTS=136
-            trainingData.setInputAndTargetDimensions( trainingInputs, 2 );
-            break;
             
-        case 'o': //Toogle orientation inputs and update length of trainingInputs
-            orientationBool =! orientationBool;
-            trainingInputs = GESTUREINPUTS*gestureBool+ORIENTATIONINPUTS*orientationBool+RAWINPUTS*rawBool; //GESTUREINPUTS=5, ORIENTATIONINPUTS=9, RAWINPUTS=136
-            trainingData.setInputAndTargetDimensions( trainingInputs, 2 );
-            break;
-            
-        case 'a': //Toogle raw inputs and update length of trainingInputs
-            rawBool =! rawBool;
-            trainingInputs = GESTUREINPUTS*gestureBool+ORIENTATIONINPUTS*orientationBool+RAWINPUTS*rawBool; //GESTUREINPUTS=5, ORIENTATIONINPUTS=9, RAWINPUTS=136
-            trainingData.setInputAndTargetDimensions( trainingInputs, 2 );
-            break;
-            
-            
-            
-        case 'i':
-            drawInfo = !drawInfo;
-            break;
-            
-        case 'n':
-            drawNumbers = !drawNumbers;
-            break;
-            
-        case 'f':
-            drawFace = !drawFace;
-            break;
-            
-        case 'p':
-            drawPose = !drawPose;
-            break;
-            
-        case 'v':
-            drawVideo = !drawVideo;
-            break;
-        
         case OF_KEY_TAB:
             setRegressifier( ++this->regressifierType % NUM_REGRESSIFIERS );
             break;
+            
+            
+        //CLASSIFICATION
+            
+        case OF_KEY_RETURN:
+            setClassifier( ++this->classifierType % NUM_CLASSIFIERS );
+            break;
+            
+        case '1':
+            trainingClassLabel_C = 1;
+            break;
+        case '2':
+            trainingClassLabel_C = 2;
+            break;
+        case '3':
+            trainingClassLabel_C = 3;
+            break;
+            
+        case 'R':
+            
+            record_C = !record_C;
+            
+            break;
+        
+        case 'T':
+            if( pipeline_C.train( trainingData_C ) ){
+                infoText_C = "Pipeline Trained";
+                predictionPlot_C.setup( 500, pipeline_C.getNumClasses(), "prediction likelihoods" );
+                predictionPlot_C.setDrawGrid( true );
+                predictionPlot_C.setDrawInfoText( true );
+                predictionPlot_C.setFont( smallFont );
+            }else infoText_C = "WARNING: Failed to train pipeline";
+            break;
+            
             
         default:
             break;
@@ -406,6 +510,7 @@ void ofApp::keyPressed(int key){
     
 }
 
+//--------------------------------------------------------------
 bool ofApp::setRegressifier( const int type ){
     
     LinearRegression linearRegression;
@@ -455,6 +560,109 @@ bool ofApp::setRegressifier( const int type ){
     return true;
 }
 
+//--------------------------------------------------------------
+bool ofApp::setClassifier( const int type ){
+    
+    int nullRejection = 0; //Change this if you want to enable nullrejection
+    
+    AdaBoost adaboost;
+    DecisionTree dtree;
+    KNN knn;
+    GMM gmm;
+    ANBC naiveBayes;
+    MinDist minDist;
+    RandomForests randomForest;
+    Softmax softmax;
+    SVM svm;
+    
+    this->classifierType = type;
+    
+    switch( classifierType ){
+        case ADABOOST:
+            adaboost.enableNullRejection( nullRejection ); // The GRT AdaBoost algorithm does not currently support null rejection, although this will be added at some point in the near future.
+            adaboost.setNullRejectionCoeff( 3 );
+            pipeline.setClassifier( adaboost );
+            break;
+        case DECISION_TREE:
+            dtree.enableNullRejection( nullRejection );
+            dtree.setNullRejectionCoeff( 3 );
+            dtree.setMaxDepth( 10 );
+            dtree.setMinNumSamplesPerNode( 3 );
+            dtree.setRemoveFeaturesAtEachSpilt( false );
+            pipeline.setClassifier( dtree );
+            break;
+        case KKN:
+            knn.enableNullRejection( nullRejection );
+            knn.setNullRejectionCoeff( 3 );
+            pipeline.setClassifier( knn );
+            break;
+        case GAUSSIAN_MIXTURE_MODEL:
+            gmm.enableNullRejection( nullRejection );
+            gmm.setNullRejectionCoeff( 3 );
+            pipeline.setClassifier( gmm );
+            break;
+        case NAIVE_BAYES:
+            naiveBayes.enableNullRejection( nullRejection );
+            naiveBayes.setNullRejectionCoeff( 3 );
+            pipeline.setClassifier( naiveBayes );
+            break;
+        case MINDIST:
+            minDist.enableNullRejection( nullRejection );
+            minDist.setNullRejectionCoeff( 3 );
+            pipeline.setClassifier( minDist );
+            break;
+        case RANDOM_FOREST_10:
+            randomForest.enableNullRejection( nullRejection );
+            randomForest.setNullRejectionCoeff( 3 );
+            randomForest.setForestSize( 10 );
+            randomForest.setNumRandomSplits( 2 );
+            randomForest.setMaxDepth( 10 );
+            randomForest.setMinNumSamplesPerNode( 3 );
+            randomForest.setRemoveFeaturesAtEachSpilt( false );
+            pipeline.setClassifier( randomForest );
+            break;
+        case RANDOM_FOREST_100:
+            randomForest.enableNullRejection( nullRejection );
+            randomForest.setNullRejectionCoeff( 3 );
+            randomForest.setForestSize( 100 );
+            randomForest.setNumRandomSplits( 2 );
+            randomForest.setMaxDepth( 10 );
+            randomForest.setMinNumSamplesPerNode( 3 );
+            randomForest.setRemoveFeaturesAtEachSpilt( false );
+            pipeline.setClassifier( randomForest );
+            break;
+        case RANDOM_FOREST_200:
+            randomForest.enableNullRejection( nullRejection );
+            randomForest.setNullRejectionCoeff( 3 );
+            randomForest.setForestSize( 200 );
+            randomForest.setNumRandomSplits( 2 );
+            randomForest.setMaxDepth( 10 );
+            randomForest.setMinNumSamplesPerNode( 3 );
+            randomForest.setRemoveFeaturesAtEachSpilt( false );
+            pipeline.setClassifier( randomForest );
+            break;
+        case SOFTMAX:
+            softmax.enableNullRejection( false ); //Does not support null rejection
+            softmax.setNullRejectionCoeff( 3 );
+            pipeline.setClassifier( softmax );
+            break;
+        case SVM_LINEAR:
+            svm.enableNullRejection( nullRejection );
+            svm.setNullRejectionCoeff( 3 );
+            pipeline.setClassifier( SVM(SVM::LINEAR_KERNEL) );
+            break;
+        case SVM_RBF:
+            svm.enableNullRejection( nullRejection );
+            svm.setNullRejectionCoeff( 3 );
+            pipeline.setClassifier( SVM(SVM::RBF_KERNEL) );
+            break;
+        default:
+            return false;
+            break;
+    }
+    
+    return true;
+}
 
 //--------------------------------------------------------------
 float ofApp:: getGesture (Gesture gesture){
