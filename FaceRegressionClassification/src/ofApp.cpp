@@ -19,10 +19,10 @@ void ofApp::setup(){
     hugeFont.setLineHeight(38.0f);
     
     //Initialize the training and info variables
-    infoText = "";
-    trainingModeActive = false;
-    recordTrainingData = false;
-    predictionModeActive = false;
+    infoText_R = "";
+    trainingModeActive_R = false;
+    recordTrainingData_R = false;
+    predictionModeActive_R = false;
     drawInfo = true;
     
     //Select the inputs: Gestures, orientations or raw inputs
@@ -31,20 +31,17 @@ void ofApp::setup(){
     orientationBool = false;
     
     trainingInputs = GESTUREINPUTS*gestureBool+ORIENTATIONINPUTS*orientationBool+RAWINPUTS*rawBool; //RAWINPUTS=136, ORIENTATIONINPUTS=9, GESTUREINPUTS=5
-    
-    trainingData.setInputAndTargetDimensions( trainingInputs, 2 );
-    
+    trainingData_R.setInputAndTargetDimensions( trainingInputs, 2 );
     
     //set the default classifier
     setRegressifier( LINEAR_REGRESSION );
-    
     
     //CLASSIFICATION
     //Initialize the training and info variables
     infoText_C = "";
     trainingClassLabel_C = 1;
     record_C = false;
-    drawInfo_C = true;
+    //drawInfo_C = true;
     
     trainingData_C.setNumDimensions( trainingInputs );
     
@@ -55,9 +52,7 @@ void ofApp::setup(){
     pipeline_C.setClassifier( naiveBayes );
     
     
-    
     //Facetracker
-    
     //Select the inputs: Gestures, orientations or raw inputs
     rawBool = false;
     gestureBool = true;
@@ -144,31 +139,31 @@ void ofApp::update(){
         
         
         //Update the training mode if needed
-        if( trainingModeActive){
+        if( trainingModeActive_R){
             
             //Check to see if the countdown timer has elapsed, if so then start the recording
-            if( !recordTrainingData ){
-                if( trainingTimer.timerReached() ){
-                    recordTrainingData = true;
-                    trainingTimer.start( RECORDING_TIME );
+            if( !recordTrainingData_R ){
+                if( trainingTimer_R.timerReached() ){
+                    recordTrainingData_R = true;
+                    trainingTimer_R.start( RECORDING_TIME );
                 }
             }else{
                 //We should be recording the training data - check to see if we should stop the recording
-                if( trainingTimer.timerReached() ){
-                    trainingModeActive = false;
-                    recordTrainingData = false;
+                if( trainingTimer_R.timerReached() ){
+                    trainingModeActive_R = false;
+                    recordTrainingData_R = false;
                 }
             }
             
-            if( recordTrainingData ){
+            if( recordTrainingData_R ){
  
                 VectorFloat targetVector(2);
                 targetVector[0] = val1;
                 targetVector[1] = val2;
 
                 
-                if( !trainingData.addSample(trainingSample,targetVector) ){
-                    infoText = "WARNING: Failed to add training sample to training data!";
+                if( !trainingData_R.addSample(trainingSample,targetVector) ){
+                    infoText_R = "WARNING: Failed to add training sample to training data!";
                 }
             }
         }
@@ -176,19 +171,19 @@ void ofApp::update(){
         inputVector = trainingSample;
         
         //Update the prediction mode if active
-        if( predictionModeActive ){
+        if( predictionModeActive_R ){
             
-            if( pipeline.predict( inputVector ) ){
-                rawVal1 = ofClamp(pipeline.getRegressionData()[0],0.0, 1.0);
-                rawVal2 = ofClamp(pipeline.getRegressionData()[1],0.0, 1.0);
+            if( pipeline_R.predict( inputVector ) ){
+                rawVal1 = ofClamp(pipeline_R.getRegressionData()[0],0.0, 1.0);
+                rawVal2 = ofClamp(pipeline_R.getRegressionData()[1],0.0, 1.0);
 
             }else{
-                infoText = "ERROR: Failed to run prediction!";
+                infoText_R = "ERROR: Failed to run prediction!";
             }
         }
     }
     
-    if (predictionModeActive) {
+    if (predictionModeActive_R) {
         val1 = val1 + ( rawVal1 - val1 ) * (1- smoothing);
         val2 = val2 + ( rawVal2 - val2 ) * (1- smoothing);
     }
@@ -254,8 +249,8 @@ void ofApp::draw(){
     }
     
 
-    if( trainingModeActive ){
-        if( !recordTrainingData ){
+    if( trainingModeActive_R ){
+        if( !recordTrainingData_R ){
             ofSetColor(255, 204, 0);
             string txt = "PREP";
             ofRectangle bounds = hugeFont.getStringBoundingBox(txt,0,0);
@@ -314,11 +309,11 @@ void ofApp::draw(){
         
         smallFont.drawString( "Regressifier: " + regressifierTypeToString( regressifierType ), textX, textY ); textY += textSpacer;
         
-        smallFont.drawString( "Recording: " + ofToString( recordTrainingData ), textX, textY ); textY += textSpacer;
-        smallFont.drawString( "Num Samples: " + ofToString( trainingData.getNumSamples() ), textX, textY ); textY += textSpacer;
-        smallFont.drawString( "Prediction mode active: " + ofToString( predictionModeActive), textX, textY ); textY += textSpacer;
+        smallFont.drawString( "Recording: " + ofToString( recordTrainingData_R ), textX, textY ); textY += textSpacer;
+        smallFont.drawString( "Num Samples: " + ofToString( trainingData_R.getNumSamples() ), textX, textY ); textY += textSpacer;
+        smallFont.drawString( "Prediction mode active: " + ofToString( predictionModeActive_R), textX, textY ); textY += textSpacer;
         ofSetColor(255,241,0);
-        smallFont.drawString( infoText, textX, textY ); textY += textSpacer;
+        smallFont.drawString( infoText_R, textX, textY ); textY += textSpacer;
         ofSetColor(255);
         textY += textSpacer;
         
@@ -370,7 +365,7 @@ void ofApp::draw(){
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
     
-    infoText = "";
+    infoText_R = "";
     infoText_C = "";
     bool buildTexture = false;
     
@@ -380,19 +375,19 @@ void ofApp::keyPressed(int key){
         case 'g': //Toogle gesture inputs and update length of trainingInputs
             gestureBool =! gestureBool;
             trainingInputs = GESTUREINPUTS*gestureBool+ORIENTATIONINPUTS*orientationBool+RAWINPUTS*rawBool; //GESTUREINPUTS=5, ORIENTATIONINPUTS=9, RAWINPUTS=136
-            trainingData.setInputAndTargetDimensions( trainingInputs, 2 );
+            trainingData_R.setInputAndTargetDimensions( trainingInputs, 2 );
             break;
             
         case 'o': //Toogle orientation inputs and update length of trainingInputs
             orientationBool =! orientationBool;
             trainingInputs = GESTUREINPUTS*gestureBool+ORIENTATIONINPUTS*orientationBool+RAWINPUTS*rawBool; //GESTUREINPUTS=5, ORIENTATIONINPUTS=9, RAWINPUTS=136
-            trainingData.setInputAndTargetDimensions( trainingInputs, 2 );
+            trainingData_R.setInputAndTargetDimensions( trainingInputs, 2 );
             break;
             
         case 'a': //Toogle raw inputs and update length of trainingInputs
             rawBool =! rawBool;
             trainingInputs = GESTUREINPUTS*gestureBool+ORIENTATIONINPUTS*orientationBool+RAWINPUTS*rawBool; //GESTUREINPUTS=5, ORIENTATIONINPUTS=9, RAWINPUTS=136
-            trainingData.setInputAndTargetDimensions( trainingInputs, 2 );
+            trainingData_R.setInputAndTargetDimensions( trainingInputs, 2 );
             break;
             
         case 'i':
@@ -418,36 +413,36 @@ void ofApp::keyPressed(int key){
             
             //REGRESSION
         case 'r':
-            predictionModeActive = false;
-            trainingModeActive = true;
-            recordTrainingData = false;
-            trainingTimer.start( PRE_RECORDING_COUNTDOWN_TIME );
+            predictionModeActive_R = false;
+            trainingModeActive_R = true;
+            recordTrainingData_R = false;
+            trainingTimer_R.start( PRE_RECORDING_COUNTDOWN_TIME );
             break;
         case 't':
-            if( pipeline.train( trainingData ) ){
-                infoText = "Pipeline Trained";
-                predictionModeActive = true;
-            }else infoText = "WARNING: Failed to train pipeline";
+            if( pipeline_R.train( trainingData_R ) ){
+                infoText_R = "Pipeline Trained";
+                predictionModeActive_R = true;
+            }else infoText_R = "WARNING: Failed to train pipeline";
             break;
         case 's':
-            if( trainingData.save( ofToDataPath("TrainingData.grt") ) ){
-                infoText = "Training data saved to file";
-            }else infoText = "WARNING: Failed to save training data to file";
+            if( trainingData_R.save( ofToDataPath("TrainingData_R.grt") ) ){
+                infoText_R = "Training data saved to file";
+            }else infoText_R = "WARNING: Failed to save training data to file";
             break;
         case 'l':
-            if( trainingData.load( ofToDataPath("TrainingData.grt") ) ){
-                infoText = "Training data loaded from file";
-            }else infoText = "WARNING: Failed to load training data from file";
+            if( trainingData_R.load( ofToDataPath("TrainingData_R.grt") ) ){
+                infoText_R = "Training data loaded from file";
+            }else infoText_R = "WARNING: Failed to load training data from file";
             break;
         
         case 'd':
-            predictionModeActive =! predictionModeActive;
-            infoText = "Model paused";
+            predictionModeActive_R =! predictionModeActive_R;
+            infoText_R = "Model paused";
             break;
             
         case 'c':
-            trainingData.clear();
-            infoText = "Training data cleared";
+            trainingData_R.clear();
+            infoText_R = "Training data cleared";
             break;
             
             
@@ -545,18 +540,18 @@ bool ofApp::setRegressifier( const int type ){
     
     this->regressifierType = type;
     
-    pipeline.clear();
+    pipeline_R.clear();
     
     switch( regressifierType ){
         case LINEAR_REGRESSION:
-            pipeline << MultidimensionalRegression(linearRegression,true);
+            pipeline_R << MultidimensionalRegression(linearRegression,true);
             break;
         case LOGISTIC_REGRESSION:
-            pipeline << MultidimensionalRegression(logisticRegression,true);
+            pipeline_R << MultidimensionalRegression(logisticRegression,true);
             break;
         case NEURAL_NET:
         {
-            unsigned int numInputNeurons = trainingData.getNumInputDimensions();
+            unsigned int numInputNeurons = trainingData_R.getNumInputDimensions();
             unsigned int numHiddenNeurons = 10; 
             unsigned int numOutputNeurons = 1; //1 as we are using multidimensional regression
             
@@ -575,7 +570,7 @@ bool ofApp::setRegressifier( const int type ){
             //The MLP generally works much better if the training and prediction data is first scaled to a common range (i.e. [0.0 1.0])
             mlp.enableScaling( true );
             
-            pipeline << MultidimensionalRegression(mlp,true);
+            pipeline_R << MultidimensionalRegression(mlp,true);
         }
             break;
         default:
@@ -607,7 +602,7 @@ bool ofApp::setClassifier( const int type ){
         case ADABOOST:
             adaboost.enableNullRejection( nullRejection ); // The GRT AdaBoost algorithm does not currently support null rejection, although this will be added at some point in the near future.
             adaboost.setNullRejectionCoeff( 3 );
-            pipeline.setClassifier( adaboost );
+            pipeline_C.setClassifier( adaboost );
             break;
         case DECISION_TREE:
             dtree.enableNullRejection( nullRejection );
@@ -615,27 +610,27 @@ bool ofApp::setClassifier( const int type ){
             dtree.setMaxDepth( 10 );
             dtree.setMinNumSamplesPerNode( 3 );
             dtree.setRemoveFeaturesAtEachSpilt( false );
-            pipeline.setClassifier( dtree );
+            pipeline_C.setClassifier( dtree );
             break;
         case KKN:
             knn.enableNullRejection( nullRejection );
             knn.setNullRejectionCoeff( 3 );
-            pipeline.setClassifier( knn );
+            pipeline_C.setClassifier( knn );
             break;
         case GAUSSIAN_MIXTURE_MODEL:
             gmm.enableNullRejection( nullRejection );
             gmm.setNullRejectionCoeff( 3 );
-            pipeline.setClassifier( gmm );
+            pipeline_C.setClassifier( gmm );
             break;
         case NAIVE_BAYES:
             naiveBayes.enableNullRejection( nullRejection );
             naiveBayes.setNullRejectionCoeff( 3 );
-            pipeline.setClassifier( naiveBayes );
+            pipeline_C.setClassifier( naiveBayes );
             break;
         case MINDIST:
             minDist.enableNullRejection( nullRejection );
             minDist.setNullRejectionCoeff( 3 );
-            pipeline.setClassifier( minDist );
+            pipeline_C.setClassifier( minDist );
             break;
         case RANDOM_FOREST_10:
             randomForest.enableNullRejection( nullRejection );
@@ -645,7 +640,7 @@ bool ofApp::setClassifier( const int type ){
             randomForest.setMaxDepth( 10 );
             randomForest.setMinNumSamplesPerNode( 3 );
             randomForest.setRemoveFeaturesAtEachSpilt( false );
-            pipeline.setClassifier( randomForest );
+            pipeline_C.setClassifier( randomForest );
             break;
         case RANDOM_FOREST_100:
             randomForest.enableNullRejection( nullRejection );
@@ -655,7 +650,7 @@ bool ofApp::setClassifier( const int type ){
             randomForest.setMaxDepth( 10 );
             randomForest.setMinNumSamplesPerNode( 3 );
             randomForest.setRemoveFeaturesAtEachSpilt( false );
-            pipeline.setClassifier( randomForest );
+            pipeline_C.setClassifier( randomForest );
             break;
         case RANDOM_FOREST_200:
             randomForest.enableNullRejection( nullRejection );
@@ -665,22 +660,22 @@ bool ofApp::setClassifier( const int type ){
             randomForest.setMaxDepth( 10 );
             randomForest.setMinNumSamplesPerNode( 3 );
             randomForest.setRemoveFeaturesAtEachSpilt( false );
-            pipeline.setClassifier( randomForest );
+            pipeline_C.setClassifier( randomForest );
             break;
         case SOFTMAX:
             softmax.enableNullRejection( false ); //Does not support null rejection
             softmax.setNullRejectionCoeff( 3 );
-            pipeline.setClassifier( softmax );
+            pipeline_C.setClassifier( softmax );
             break;
         case SVM_LINEAR:
             svm.enableNullRejection( nullRejection );
             svm.setNullRejectionCoeff( 3 );
-            pipeline.setClassifier( SVM(SVM::LINEAR_KERNEL) );
+            pipeline_C.setClassifier( SVM(SVM::LINEAR_KERNEL) );
             break;
         case SVM_RBF:
             svm.enableNullRejection( nullRejection );
             svm.setNullRejectionCoeff( 3 );
-            pipeline.setClassifier( SVM(SVM::RBF_KERNEL) );
+            pipeline_C.setClassifier( SVM(SVM::RBF_KERNEL) );
             break;
         default:
             return false;

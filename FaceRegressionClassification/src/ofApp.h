@@ -38,28 +38,30 @@ public:
     bool setClassifier( const int type );
     bool setRegressifier( const int type );
     
-    //Create some variables for the demo
-    RegressionData trainingData;      		//This will store our training data
-    GestureRecognitionPipeline pipeline;        //This is a wrapper for our classifier and any pre/post processing modules
-    bool recordTrainingData;                                //This is a flag that keeps track of when we should record training data
-    bool trainingModeActive;
-    bool predictionModeActive;
-    bool predictionModeActive_C;
-    bool drawInfo;
+
+    //GENERAL
     
-        GRT::VectorFloat targetVector;              //This will hold the current label for when we are training the classifier //DON'T KNOW IF IT IS NEEDED??
-    
-    string infoText;                            //This string will be used to draw some info messages to the main app window
-    
-    int regressifierType;
     ofTrueTypeFont largeFont;
     ofTrueTypeFont smallFont;
     ofTrueTypeFont hugeFont;
+    bool drawInfo;
 
-    Timer trainingTimer;
-
-    float rectW;
-    float rectH;
+    //REGRESSION
+    int regressifierType;
+    Timer trainingTimer_R;
+    
+    RegressionData trainingData_R;      		//This will store our training data
+    GestureRecognitionPipeline pipeline_R;        //This is a wrapper for our classifier and any pre/post processing modules
+    bool recordTrainingData_R;                                //This is a flag that keeps track of when we should record training data
+    bool trainingModeActive_R;
+    bool predictionModeActive_R;
+    
+    
+    
+    GRT::VectorFloat targetVector;              //This will hold the current label for when we are training the classifier //DON'T KNOW IF IT IS NEEDED??
+    
+    string infoText_R;                            //This string will be used to draw some info messages to the main app window
+    
     
     string regressifierTypeToString( const int type ){
         switch( type ){
@@ -79,11 +81,10 @@ public:
     
     //CLASSIFICATION
     
-    //Create some variables for the demo
+    bool predictionModeActive_C;
     ClassificationData trainingData_C;      		//This will store our training data
     GestureRecognitionPipeline pipeline_C;        //This is a wrapper for our classifier and any pre/post processing modules
     bool record_C;                                //This is a flag that keeps track of when we should record training data
-    bool drawInfo_C;
     UINT trainingClassLabel_C;                    //This will hold the current label for when we are training the classifier
     string infoText_C;                            //This string will be used to draw some info messages to the main app window
     
