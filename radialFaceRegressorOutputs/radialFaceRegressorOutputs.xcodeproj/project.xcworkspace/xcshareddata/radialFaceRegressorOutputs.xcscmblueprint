@@ -1,0 +1,43 @@
+{
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyRepositoryLocationsKey" : {
+
+  },
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyStatesKey" : {
+    "CC182281C6D964B9331E36C0CD377F4A30240DEA" : 0,
+    "90E2F969A762FB62C413A0C44D1F334E6EC3F531" : 0,
+    "73BE4E551228482DA302485954E0947B5FF250F9" : 0,
+    "3408B309914B0639E8D618139E80EF3032A46163" : 0
+  },
+  "DVTSourceControlWorkspaceBlueprintIdentifierKey" : "39B901C7-4434-457F-81BB-5D4CDC6DBB24",
+  "DVTSourceControlWorkspaceBlueprintWorkingCopyPathsKey" : {
+    "CC182281C6D964B9331E36C0CD377F4A30240DEA" : "..\/..\/addons\/ofxGrt\/libs\/grt",
+    "90E2F969A762FB62C413A0C44D1F334E6EC3F531" : "..\/..\/addons\/ofxMidi",
+    "73BE4E551228482DA302485954E0947B5FF250F9" : "..\/..\/addons\/ofxGrt",
+    "3408B309914B0639E8D618139E80EF3032A46163" : "..\/..\/addons\/ofxFaceTracker2"
+  },
+  "DVTSourceControlWorkspaceBlueprintNameKey" : "radialFaceRegressorOutputs",
+  "DVTSourceControlWorkspaceBlueprintVersion" : 204,
+  "DVTSourceControlWorkspaceBlueprintRelativePathToProjectKey" : "radialFaceRegressorOutputs\/radialFaceRegressorOutputs.xcodeproj",
+  "DVTSourceControlWorkspaceBlueprintRemoteRepositoriesKey" : [
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/github.com\/HalfdanJ\/ofxFaceTracker2.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "3408B309914B0639E8D618139E80EF3032A46163"
+    },
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/github.com\/nickgillian\/ofxGrt.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "73BE4E551228482DA302485954E0947B5FF250F9"
+    },
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/github.com\/danomatika\/ofxMidi.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "90E2F969A762FB62C413A0C44D1F334E6EC3F531"
+    },
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/github.com\/nickgillian\/grt.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "CC182281C6D964B9331E36C0CD377F4A30240DEA"
+    }
+  ]
+}
