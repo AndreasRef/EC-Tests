@@ -47,7 +47,7 @@ void ofApp::setup(){
     drawInfo_C = true;
     
     //The input to the training data will be the [x y] from the mouse, so we set the number of dimensions to 2
-    trainingData_C.setNumDimensions( 2 );
+    trainingData_C.setNumDimensions( trainingInputs );
     
     //set the default classifier
     ANBC naiveBayes;
@@ -107,7 +107,6 @@ void ofApp::update(){
     
     if ( tracker.size()>0) {
         
-
         
         //RAW (136 values)
         if (rawBool) {
@@ -196,23 +195,14 @@ void ofApp::update(){
     }
     
     
-    //CLASSIFICATION
-    VectorFloat trainingSample_C(2);
-    trainingSample_C[0] = ofGetMouseX();
-    trainingSample_C[1] = ofGetMouseY();
-    
-    //Update the data graph
-    //    mouseDataPlot.update(trainingSample );
-    
-    
     //If we are recording training data, then add the current sample to the training data set
     if( record_C ){
-        trainingData_C.addSample( trainingClassLabel_C, trainingSample_C );
+        trainingData_C.addSample( trainingClassLabel_C, trainingSample );
     }
     
     //If the pipeline has been trained, then run the prediction
-    if( pipeline_C.getTrained() ){
-        pipeline_C.predict( trainingSample_C );
+    if( pipeline_C.getTrained() && predictionModeActive_C ){
+        pipeline_C.predict( trainingSample );
         predictionPlot_C.update( pipeline_C.getClassLikelihoods() );
     }
 }
@@ -292,13 +282,13 @@ void ofApp::draw(){
         ofDrawRectangle( 5, 5, 290, 720 -8 );
         ofSetColor( 255, 255, 255 );
 
-        smallFont.drawString( "EYE CONDUCTOR ML EXAMPLE", textX, textY ); textY += textSpacer;
+        largeFont.drawString( "EYE CONDUCTOR ML EXAMPLE", textX, textY ); textY += textSpacer;
         
         smallFont.drawString( "Framerate : "+ofToString(ofGetFrameRate()), textX, textY ); textY += textSpacer;
         smallFont.drawString( "Tracker thread framerate : "+ofToString(tracker.getThreadFps()), textX, textY ); textY += textSpacer;
         textY += textSpacer;
         
-        smallFont.drawString( "GLOBAL CONTROLS", textX, textY ); textY += textSpacer;
+        largeFont.drawString( "GLOBAL CONTROLS", textX, textY ); textY += textSpacer;
         smallFont.drawString( "[i]: Toogle Info", textX, textY ); textY += textSpacer;
         smallFont.drawString( "[a] Input all raw points: "+ofToString(rawBool), textX, textY ); textY += textSpacer;
         smallFont.drawString( "[g] Input gestures: "+ofToString(gestureBool), textX, textY ); textY += textSpacer;
@@ -313,7 +303,7 @@ void ofApp::draw(){
         textY += textSpacer;
         
         //REGRESSION
-        smallFont.drawString( "REGRESSION CONTROLS", textX, textY ); textY += textSpacer;
+        largeFont.drawString( "REGRESSION CONTROLS", textX, textY ); textY += textSpacer;
         smallFont.drawString( "[r]: Record Sample", textX, textY ); textY += textSpacer;
         smallFont.drawString( "[l]: Load Model", textX, textY ); textY += textSpacer;
         smallFont.drawString( "[s]: Save Model", textX, textY ); textY += textSpacer;
@@ -335,8 +325,8 @@ void ofApp::draw(){
         
         
         //CLASSIFICATION
-        smallFont.drawString( "CLASSIFICATION CONTROLS", textX, textY ); textY += textSpacer;
-        smallFont.drawString( "[0-9]: Set Class Label", textX, textY ); textY += textSpacer;
+        largeFont.drawString( "CLASSIFICATION CONTROLS", textX, textY ); textY += textSpacer;
+        smallFont.drawString( "[1-9]: Set Class Label", textX, textY ); textY += textSpacer;
         smallFont.drawString( "[R]: Record Sample", textX, textY ); textY += textSpacer;
         smallFont.drawString( "[L]: Load Model", textX, textY ); textY += textSpacer;
         smallFont.drawString( "[S]: Save Model", textX, textY ); textY += textSpacer;
@@ -349,6 +339,7 @@ void ofApp::draw(){
         smallFont.drawString( "Class Label: " + ofToString( trainingClassLabel_C ), textX, textY ); textY += textSpacer;
         smallFont.drawString( "Recording: " + ofToString( record_C ), textX, textY ); textY += textSpacer;
         smallFont.drawString( "Num Samples: " + ofToString( trainingData_C.getNumSamples() ), textX, textY ); textY += textSpacer;
+        smallFont.drawString( "Prediction mode active: " + ofToString( predictionModeActive_C), textX, textY ); textY += textSpacer;
         ofSetColor(255,241,0);
         smallFont.drawString( infoText_C, textX, textY ); textY += textSpacer;
         ofSetColor(255);
@@ -361,16 +352,10 @@ void ofApp::draw(){
     
     
     //CLASSIFICATION
-    
-    int marginX = 5;
-    int marginY = 5;
     int graphX = 300 ;
-    int graphY = marginY;
+    int graphY = 5;
     int graphW = ofGetWidth() - 305;
     int graphH = 100;
-    float infoX = 760;
-    float infoW = 250;
-    
     
     if( pipeline_C.getTrained() ){
         predictionPlot_C.draw( graphX, graphY, graphW, graphH ); graphY += graphH * 1.1;
@@ -387,6 +372,7 @@ void ofApp::draw(){
 void ofApp::keyPressed(int key){
     
     infoText = "";
+    infoText_C = "";
     bool buildTexture = false;
     
     switch ( key) {
@@ -456,7 +442,7 @@ void ofApp::keyPressed(int key){
             break;
         
         case 'd':
-            predictionModeActive = false;
+            predictionModeActive =! predictionModeActive;
             infoText = "Model paused";
             break;
             
@@ -486,7 +472,25 @@ void ofApp::keyPressed(int key){
         case '3':
             trainingClassLabel_C = 3;
             break;
-            
+        case '4':
+            trainingClassLabel_C = 4;
+            break;
+        case '5':
+            trainingClassLabel_C = 5;
+            break;
+        case '6':
+            trainingClassLabel_C = 6;
+            break;
+        case '7':
+            trainingClassLabel_C = 7;
+            break;
+        case '8':
+            trainingClassLabel_C = 8;
+            break;
+        case '9':
+            trainingClassLabel_C = 9;
+            break;
+        
         case 'R':
             
             record_C = !record_C;
@@ -500,10 +504,33 @@ void ofApp::keyPressed(int key){
                 predictionPlot_C.setDrawGrid( true );
                 predictionPlot_C.setDrawInfoText( true );
                 predictionPlot_C.setFont( smallFont );
+                
+                predictionModeActive_C = true;
             }else infoText_C = "WARNING: Failed to train pipeline";
             break;
+        
+        case 'L':
+            if( trainingData_C.load( ofToDataPath("TrainingData_C.grt") ) ){
+                infoText_C = "Training data loaded from file";
+            }else infoText_C = "WARNING: Failed to load training data from file";
+            break;
+
+        case 'S':
+            if( trainingData_C.save( ofToDataPath("TrainingData_C.grt") ) ){
+                infoText_C = "Training data saved to file";
+            }else infoText_C = "WARNING: Failed to save training data to file";
+            break;
+        
+        case 'C':
+            trainingData_C.clear();
+            infoText_C = "Training data cleared";
+            break;
             
-            
+        case 'D':
+            predictionModeActive_C =! predictionModeActive_C;
+            infoText_C = "Model paused";
+        
+        
         default:
             break;
     }

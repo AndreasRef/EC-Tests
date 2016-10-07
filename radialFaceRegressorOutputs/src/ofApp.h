@@ -44,6 +44,7 @@ public:
     bool recordTrainingData;                                //This is a flag that keeps track of when we should record training data
     bool trainingModeActive;
     bool predictionModeActive;
+    bool predictionModeActive_C;
     bool drawInfo;
     
         GRT::VectorFloat targetVector;              //This will hold the current label for when we are training the classifier //DON'T KNOW IF IT IS NEEDED??
