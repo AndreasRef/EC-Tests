@@ -1,20 +1,28 @@
 {
+  "DVTSourceControlWorkspaceBlueprintPrimaryRemoteRepositoryKey" : "19E398976A4D547BAEC098D04CCB43E03C7DD3C8",
   "DVTSourceControlWorkspaceBlueprintWorkingCopyRepositoryLocationsKey" : {
 
   },
   "DVTSourceControlWorkspaceBlueprintWorkingCopyStatesKey" : {
+    "90E2F969A762FB62C413A0C44D1F334E6EC3F531" : 0,
     "A4D0373C699384D3146D509694B516AB9C7B5AD6" : 0,
-    "90E2F969A762FB62C413A0C44D1F334E6EC3F531" : 0
+    "19E398976A4D547BAEC098D04CCB43E03C7DD3C8" : 0
   },
   "DVTSourceControlWorkspaceBlueprintIdentifierKey" : "9F11390A-5157-4688-B028-D9906BD3EBB7",
   "DVTSourceControlWorkspaceBlueprintWorkingCopyPathsKey" : {
+    "90E2F969A762FB62C413A0C44D1F334E6EC3F531" : "..\/..\/addons\/ofxMidi",
     "A4D0373C699384D3146D509694B516AB9C7B5AD6" : "..\/..\/addons\/ofxFaceTracker",
-    "90E2F969A762FB62C413A0C44D1F334E6EC3F531" : "..\/..\/addons\/ofxMidi"
+    "19E398976A4D547BAEC098D04CCB43E03C7DD3C8" : "EC-Tests\/"
   },
   "DVTSourceControlWorkspaceBlueprintNameKey" : "radialMenu_InputsOutputs",
   "DVTSourceControlWorkspaceBlueprintVersion" : 204,
   "DVTSourceControlWorkspaceBlueprintRelativePathToProjectKey" : "radialMenu_InputsOutputs\/radialMenu_InputsOutputs.xcodeproj",
   "DVTSourceControlWorkspaceBlueprintRemoteRepositoriesKey" : [
+    {
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/github.com\/AndreasRef\/EC-Tests.git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
+      "DVTSourceControlWorkspaceBlueprintRemoteRepositoryIdentifierKey" : "19E398976A4D547BAEC098D04CCB43E03C7DD3C8"
+    },
     {
       "DVTSourceControlWorkspaceBlueprintRemoteRepositoryURLKey" : "https:\/\/github.com\/danomatika\/ofxMidi.git",
       "DVTSourceControlWorkspaceBlueprintRemoteRepositorySystemKey" : "com.apple.dt.Xcode.sourcecontrol.Git",
