@@ -5,7 +5,7 @@
 int main( ){
     ofGLFWWindowSettings settings;
     settings.setGLVersion(3,2);
-    settings.width = 1280;
+    settings.width = 1440;
     settings.height = 880;
     settings.resizable = true;
     ofCreateWindow(settings);         // <-------- setup the GL context

@@ -91,7 +91,7 @@ void ofApp::setup(){
     drawNumbers = false;
     drawFace = true;
     drawPose = false;
-    drawVideo = true;
+    drawVideo = false;
     
     
     // Setup grabber
@@ -131,15 +131,15 @@ void ofApp::setup(){
     
     //SOUNDPLAYER
     synth.setMultiPlay(false);
-    synth.load("sounds/synth.wav");
+    synth.load("../../../samples/synth.wav");
     synth.setVolume(0.99f);
     
     sDrum.setMultiPlay(false);
-    sDrum.load("sounds/SD.wav");
+    sDrum.load("../../../samples/SD.wav");
     sDrum.setVolume(0.99f);
     
     bDrum.setMultiPlay(false);
-    bDrum.load("sounds/BD.mp3");
+    bDrum.load("../../../samples/BD.mp3");
     bDrum.setVolume(0.99f);
     
 }
@@ -149,8 +149,8 @@ void ofApp::update(){
     
     ofSoundUpdate();
     
-    control.x =ofGetMouseX();
-    control.y =ofGetMouseY();
+//    control.x =ofGetMouseX();
+//    control.y =ofGetMouseY();
     
     
     //FaceTracker2
@@ -263,30 +263,48 @@ void ofApp::update(){
         pipeline_C.predict( trainingSample );
         predictionPlot_C.update( pipeline_C.getClassLikelihoods() );
     }
+    
+    updateControlPoint(inputSelector, 0.9);
 }
 
 //--------------------------------------------------------------
 void ofApp::draw(){
     
-    ofBackground(225, 225, 225);
+    ofBackground(0);
     
     //FaceTracker draw
     ofSetColor(255);
     // Draw camera image
-    if (drawVideo) grabber.draw(0, 0); //Default
     
+    
+    if (drawVideo) {
+        
+        ofPushMatrix();
+        ofScale(-1,1);
+        ofTranslate(-ofGetWidth(), 0);
+        grabber.draw(0, 0); //Default
+        ofPopMatrix();
+    
+    }
     
     radialLayoutDraw();
     
     
     
-    // Draw estimated 3d pose
-    if (drawPose) tracker.drawDebugPose();
+    // Draw estimated 3d pose - //This is still not mirrored... pushMatrix, Scale and Translate does not work...
+    if (drawPose) {
+        tracker.drawDebugPose();
+    }
     
     //Draw all the individual points / numbers for all tracked faces
     for (int i = 0; i<tracker.size(); i ++) {
         
         if(drawFace) {
+            
+            ofPushMatrix();
+            ofScale(-1,1);
+            ofTranslate(-ofGetWidth(), 0);
+            
             ofPolyline jaw = tracker.getInstances()[i].getLandmarks().getImageFeature(ofxFaceTracker2Landmarks::JAW);
             ofPolyline left_eyebrow = tracker.getInstances()[i].getLandmarks().getImageFeature(ofxFaceTracker2Landmarks::LEFT_EYEBROW);
             ofPolyline right_eyebrow = tracker.getInstances()[i].getLandmarks().getImageFeature(ofxFaceTracker2Landmarks::RIGHT_EYEBROW);
@@ -310,10 +328,18 @@ void ofApp::draw(){
             inner_mouth.draw();
             nose_bridge.draw();
             nose_base.draw();
+            
+            ofPopMatrix();
         }
         
         for (int j = 0; j< tracker.getInstances()[i].getLandmarks().getImagePoints().size(); j++) {
-            if (drawNumbers) ofDrawBitmapString(j, tracker.getInstances()[i].getLandmarks().getImagePoint(j));
+            if (drawNumbers) {
+                ofPushMatrix();
+                ofScale(-1,1);
+                ofTranslate(-ofGetWidth(), 0);
+                ofDrawBitmapString(j, tracker.getInstances()[i].getLandmarks().getImagePoint(j));
+                ofPopMatrix();
+            }
         }
     }
     
@@ -412,27 +438,112 @@ void ofApp::draw(){
         ofSetColor(255);
         textY += textSpacer;
         
-        ofSetColor(0);
+        ofSetColor(255);
         smallFont.drawString( "INSTRUCTIONS REGRESSION: \n \n 1) Set the height and width of the output sliders \n \n 2) Press [r] to record some training samples containing your selected facial features (gestures/orientation/raw points) and output slider values. \n \n 3) Repeat step 1) and 2) with different output slider values and height and different facial expressions / head orientations \n \n 4) Press [t] to train. Move your face and see the changes in the output slider values based on your facial orientation and expression \n \n \n \n 5) INSTRUCTIONS CLASSIFICATION: Like regression but using keys [1-9], [R] (as a toogle) and [T]",  textX, 750 );
         
     }
     
     
     //CLASSIFICATION
-    int graphX = 300 ;
+    int graphX = ofGetWidth() - 200 ;
     int graphY = 5;
-    int graphW = ofGetWidth() - 305;
+    int graphW = 200;
     int graphH = 100;
     
     if( pipeline_C.getTrained() ){
         predictionPlot_C.draw( graphX, graphY, graphW, graphH ); graphY += graphH * 1.1;
     }
     
-    ofSetColor(0,0,0);
-    hugeFont.drawString(ofToString(pipeline_C.getPredictedClassLabel()), ofGetWidth()/2, ofGetHeight()/2);
+    ofSetColor(255);
+    hugeFont.drawString(ofToString(pipeline_C.getPredictedClassLabel()), ofGetWidth()/2-10, ofGetHeight()/2+30);
 
     
     gui.draw();
+}
+
+
+//--------------------------------------------------------------
+void ofApp::radialLayoutDraw() {
+    
+    //RADIAL LAYOUT
+    //Layout variables
+    float diam =ofGetHeight()*0.9;
+    int numOptions = 5;
+    float innerCircle = ofGetHeight()/8;
+    int selected = -1;
+    
+    //Declare the active arc
+    ofPath activeArc = ofPath();
+    activeArc.setCircleResolution(100);
+    activeArc.setFillColor(ofColor(0,255,0));
+    activeArc.setStrokeWidth(5);
+    activeArc.setStrokeColor(ofColor(255));
+    
+    //Draw outer circle
+    ofSetColor(122);
+    ofDrawCircle(ofGetWidth()/2, ofGetHeight()/2, diam/2);
+    
+    //Variables for trigonomitry calculations
+    float mouseTheta = atan2(smoothControl.y-ofGetHeight()/2, smoothControl.x-ofGetWidth()/2);
+    float piTheta = mouseTheta>=0?mouseTheta:mouseTheta+TWO_PI;
+    float op = numOptions/TWO_PI;
+    
+    //Run through all the options
+    for (int i=0; i<numOptions; i++) {
+        float s = i/op;
+        float e = (i+1)/op;
+        
+        //If the control point is inside an arc, update selected
+        if (piTheta>= s && piTheta <= e && ofDist(smoothControl.x, smoothControl.y, ofGetWidth()/2, ofGetHeight()/2) > innerCircle) {
+            selected = i;
+        }
+        
+        //Check if our control point is outside the arcs
+        if (ofDist(smoothControl.x, smoothControl.y, ofGetWidth()/2, ofGetHeight()/2) < innerCircle || ofDist(smoothControl.x, smoothControl.y, ofGetWidth()/2, ofGetHeight()/2) > diam/2) {
+            selected = -1;
+        }
+        
+        //Declare the passive arcs
+        ofPath passiveArcs = ofPath();
+        passiveArcs.setCircleResolution(100);
+        passiveArcs.setFillColor(ofColor(126));
+        passiveArcs.setStrokeWidth(5);
+        passiveArcs.setStrokeColor(ofColor(255));
+        
+        //Draw passive arcs
+        passiveArcs.arc(ofGetWidth()/2,  ofGetHeight()/2,  diam/2, diam/2, 360/numOptions*i, 360/numOptions* i + 360/numOptions);
+        passiveArcs.close();
+        passiveArcs.draw();
+        
+        //Draw active arc
+        if (selected == i) {
+            activeArc.arc(ofGetWidth()/2,  ofGetHeight()/2,  diam/2, diam/2, 360/numOptions*selected, 360/numOptions* selected + 360/numOptions);
+            activeArc.close();
+            activeArc.draw();
+        }
+        
+        //Draw text indicating the number/note of all the arcs
+        ofSetColor(255);
+        ofDrawBitmapString(ofToString(i), ofGetWidth()/2 + cos(s+ofDegToRad(360/(numOptions*2)))*diam/2.75, ofGetHeight()/2 + sin(s+ofDegToRad(360/(numOptions*2)))*diam/2.75);
+    }
+    
+    
+    //Draw inner circle
+    ofSetColor(0);
+    ofFill();
+    ofDrawCircle(ofGetWidth()/2, ofGetHeight()/2, innerCircle);
+    
+    //Draw selected text indicator
+    ofSetColor(255);
+    ofDrawBitmapString("Selected note", ofGetWidth()/2-50, ofGetHeight()/2-50);
+    ofDrawBitmapString(ofToString(selected), ofGetWidth()/2-5, ofGetHeight()/2-25);
+    
+    //Draw control point
+    ofSetColor(255);
+    ofDrawCircle(smoothControl.x, smoothControl.y, 10);
+    
+    
+    
 }
 
 //--------------------------------------------------------------
@@ -596,13 +707,96 @@ void ofApp::keyPressed(int key){
         case 'D':
             predictionModeActive_C =! predictionModeActive_C;
             infoText_C = "Model paused";
+            break;
         
-        
+        case 'H':
+            inputSelector = MOUSE;
+            break;
+            
+        case 'J':
+            inputSelector = HEAD_ORIENTATION;
+            break;
+            
+        case 'K':
+            inputSelector = HEAD_POSITION;
+            break;
+
         default:
             break;
     }
     
 }
+
+//--------------------------------------------------------------
+//void ofApp::updateControlPoint(const int type){
+//    
+//    //Let user can specify input device (MOUSE=0, HEAD_ORIENTATION, HEAD_POSITION, EYE_TRACKER etc) to control the main control point.
+//    
+//    switch( type ){
+//        case MOUSE:
+//            control.x =ofGetMouseX();
+//            control.y =ofGetMouseY();
+//            break;
+//        case HEAD_ORIENTATION:
+//            control.x =ofGetMouseX();
+//            control.y =ofGetMouseY();
+//            break;
+//        case HEAD_POSITION:
+//            control.x =ofGetMouseX();
+//            control.y =ofGetMouseY();
+//            break;
+//        case EYE_TRACKER: //TO DO
+//            //control.x =ofGetMouseX();
+//            //control.y =ofGetMouseY();
+//            break;
+//    }
+//    
+//    
+//
+//}
+
+//--------------------------------------------------------------
+void ofApp::updateControlPoint(int inputSelector, float smoothFactor){
+    
+    //CLEAN UP THIS FUNCTION!!!
+    
+    //Control the input
+    switch (inputSelector) {
+        case 0:
+            rawControl = ofPoint(ofGetMouseX(),ofGetMouseY());
+            break;
+        case 1:
+            if (tracker.size() > 0) {
+                ofPoint poseOrientation = ofPoint(tracker.getInstances()[0].getPoseMatrix().getRowAsVec3f(2)[0],tracker.getInstances()[0].getPoseMatrix().getRowAsVec3f(2)[1]);
+                rawControl.x = ofMap(poseOrientation.x, -0.4, 0.4, 0, ofGetWidth());
+                rawControl.y = ofMap(poseOrientation.y, -0.25, 0.25, 0, ofGetHeight());
+            }
+            
+            break;
+        case 2:
+            
+            //Track point 27 (just above the nose) and map that point...
+            if (tracker.size() > 0) {
+                //To do: Make a function so you can (re)set the center of the head in an intelligent (dynamic) way
+                ofPoint centerFacePos = tracker.getInstances()[0].getLandmarks().getImagePoint(27);
+                rawControl.x = ofMap(centerFacePos.x, 0.65*ofGetWidth(), 0.35*ofGetWidth(), 0, ofGetWidth());
+                rawControl.y = ofMap(centerFacePos.y, 0.35*ofGetHeight(), 0.65*ofGetHeight(), 0, ofGetHeight());
+            }
+            
+            break;
+        case 3:
+            //To do: EyeControl via OSC
+            break;
+        default:
+            ;
+    }
+    //Perform smoothing
+    smoothControl.x = smoothControl.x + (1-smoothFactor) * (rawControl.x-smoothControl.x);
+    smoothControl.y = smoothControl.y + (1-smoothFactor) * (rawControl.y-smoothControl.y);
+}
+
+
+
 
 //--------------------------------------------------------------
 bool ofApp::setRegressifier( const int type ){
@@ -655,87 +849,7 @@ bool ofApp::setRegressifier( const int type ){
 }
 
 
-//--------------------------------------------------------------
-void ofApp::radialLayoutDraw() {
 
-    //RADIAL LAYOUT
-    //Layout variables
-    float diam =ofGetHeight()*0.9;
-    int numOptions = 5;
-    float innerCircle = ofGetHeight()/8;
-    int selected = -1;
-    
-    //Declare the active arc
-    ofPath activeArc = ofPath();
-    activeArc.setCircleResolution(100);
-    activeArc.setFillColor(ofColor(0,255,0));
-    activeArc.setStrokeWidth(5);
-    activeArc.setStrokeColor(ofColor(255));
-    
-    //Draw outer circle
-    ofSetColor(122);
-    ofDrawCircle(ofGetWidth()/2, ofGetHeight()/2, diam/2);
-    
-    //Variables for trigonomitry calculations
-    float mouseTheta = atan2(control.y-ofGetHeight()/2, control.x-ofGetWidth()/2);
-    float piTheta = mouseTheta>=0?mouseTheta:mouseTheta+TWO_PI;
-    float op = numOptions/TWO_PI;
-    
-    //Run through all the options
-    for (int i=0; i<numOptions; i++) {
-        float s = i/op;
-        float e = (i+1)/op;
-        
-        //If the control point is inside an arc, update selected
-        if (piTheta>= s && piTheta <= e && ofDist(control.x, control.y, ofGetWidth()/2, ofGetHeight()/2) > innerCircle) {
-            selected = i;
-        }
-        
-        //Check if our control point is outside the arcs
-        if (ofDist(control.x, control.y, ofGetWidth()/2, ofGetHeight()/2) < innerCircle || ofDist(control.x, control.y, ofGetWidth()/2, ofGetHeight()/2) > diam/2) {
-            selected = -1;
-        }
-        
-        //Declare the passive arcs
-        ofPath passiveArcs = ofPath();
-        passiveArcs.setCircleResolution(100);
-        passiveArcs.setFillColor(ofColor(126));
-        passiveArcs.setStrokeWidth(5);
-        passiveArcs.setStrokeColor(ofColor(255));
-        
-        //Draw passive arcs
-        passiveArcs.arc(ofGetWidth()/2,  ofGetHeight()/2,  diam/2, diam/2, 360/numOptions*i, 360/numOptions* i + 360/numOptions);
-        passiveArcs.close();
-        passiveArcs.draw();
-        
-        //Draw active arc
-        if (selected == i) {
-            activeArc.arc(ofGetWidth()/2,  ofGetHeight()/2,  diam/2, diam/2, 360/numOptions*selected, 360/numOptions* selected + 360/numOptions);
-            activeArc.close();
-            activeArc.draw();
-        }
-        
-        //Draw text indicating the number/note of all the arcs
-        ofSetColor(255);
-        ofDrawBitmapString(ofToString(i), ofGetWidth()/2 + cos(s+ofDegToRad(360/(numOptions*2)))*diam/2.75, ofGetHeight()/2 + sin(s+ofDegToRad(360/(numOptions*2)))*diam/2.75);
-    }
-    
-    
-    //Draw inner circle
-    ofSetColor(0);
-    ofDrawCircle(ofGetWidth()/2, ofGetHeight()/2, innerCircle);
-    
-    //Draw selected text indicator
-    ofSetColor(255);
-    ofDrawBitmapString(ofToString(selected), ofGetWidth()/2-5, ofGetHeight()/2);
-    
-    //Draw control point
-    ofSetColor(255);
-    ofDrawCircle(control.x, control.y, 10);
-    
-    
-
-}
 
 //--------------------------------------------------------------
 bool ofApp::setClassifier( const int type ){

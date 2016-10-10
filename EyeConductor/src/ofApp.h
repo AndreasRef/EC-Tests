@@ -35,13 +35,27 @@ public:
     bool setRegressifier( const int type );
     
     void radialLayoutDraw();
+    void controlPoint(const int type);
     
     //GENERAL
     ofTrueTypeFont largeFont;
     ofTrueTypeFont smallFont;
     ofTrueTypeFont hugeFont;
     bool drawInfo;
+    
+    
+    
+    //CONTROLPOINT
+    enum controlPointInput{ MOUSE=0, HEAD_ORIENTATION, HEAD_POSITION, EYE_TRACKER };
+    void updateControlPoint(int inputSelector, float smoothFactor=0.0);
+    
     ofPoint control = ofPoint();
+    ofPoint smoothControl; //Is this needed?
+    ofPoint rawControl; //Is this needed?
+    
+    float smoothFactor = 1.0;
+    int inputSelector = 0;
+    
     
     //MIDI
     ofxMidiOut midiOut;
@@ -166,7 +180,7 @@ public:
     
     float getGesture (Gesture gesture);
     
-    void updateControlPoint(int inputSelector, float smoothFactor=0.0);
+    
     
     ofxFaceTracker2 tracker;
     ofVideoGrabber grabber;
