@@ -6,8 +6,6 @@ Main project for building Eye Conductor
  
  //Draw a basic layout of the different elements on paper before doing anything else...
  
- //Main input (x/y)
- Select the input (mouse, eyetracking, head position, head orientation)
  
  //Secondary input - preset
  Save selected presets that people can load up
@@ -26,7 +24,6 @@ Main project for building Eye Conductor
  Select more / fever notes in the radial layout
  Sequencer mode
  
-
  
 */
 
@@ -148,10 +145,6 @@ void ofApp::setup(){
 void ofApp::update(){
     
     ofSoundUpdate();
-    
-//    control.x =ofGetMouseX();
-//    control.y =ofGetMouseY();
-    
     
     //FaceTracker2
     grabber.update();
@@ -470,7 +463,7 @@ void ofApp::radialLayoutDraw() {
     float diam =ofGetHeight()*0.9;
     int numOptions = 5;
     float innerCircle = ofGetHeight()/8;
-    int selected = -1;
+    
     
     //Declare the active arc
     ofPath activeArc = ofPath();
@@ -1012,11 +1005,29 @@ void ofApp::mouseDragged(int x, int y, int button){
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button){
     
+    // scale the ascii values to midi velocity range 0-127
+    // see an ascii table: http://www.asciitable.com/
+    note = selected *2 + 48;
+    velocity = 122;
+    midiOut.sendNoteOn(channel, note,  velocity);
+    
+    
+    // print out both the midi note and the frequency
+    ofLogNotice() << "note: " << note
+    << " freq: " << ofxMidi::mtof(note) << " Hz";
 }
 
 //--------------------------------------------------------------
 void ofApp::mouseReleased(int x, int y, int button){
+    //midiOut.sendNoteOff(channel, note,  velocity);
     
+    midiOut << NoteOff(channel, note, velocity); // stream interface
+}
+
+//--------------------------------------------------------------
+void ofApp::exit() {
+    // clean up
+    midiOut.closePort();
 }
 
 //--------------------------------------------------------------

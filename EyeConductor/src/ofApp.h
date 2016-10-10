@@ -27,6 +27,7 @@ public:
     void mouseDragged(int x, int y, int button);
     void mousePressed(int x, int y, int button);
     void mouseReleased(int x, int y, int button);
+    void exit();
     void windowResized(int w, int h);
     void dragEvent(ofDragInfo dragInfo);
     void gotMessage(ofMessage msg);
@@ -49,12 +50,13 @@ public:
     enum controlPointInput{ MOUSE=0, HEAD_ORIENTATION, HEAD_POSITION, EYE_TRACKER };
     void updateControlPoint(int inputSelector, float smoothFactor=0.0);
     
-    ofPoint control = ofPoint();
-    ofPoint smoothControl; //Is this needed?
-    ofPoint rawControl; //Is this needed?
+    ofPoint smoothControl;
+    ofPoint rawControl;
     
     float smoothFactor = 1.0;
     int inputSelector = 0;
+    
+    int selected = -1;
     
     
     //MIDI
