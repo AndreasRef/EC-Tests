@@ -54,7 +54,7 @@ public:
     ofPoint rawControl;
     
     float smoothFactor = 1.0;
-    int inputSelector = 0;
+    //int inputSelector = 0;
     
     int selected = -1;
     
@@ -206,6 +206,15 @@ public:
     ofxFloatSlider val1;
     ofxFloatSlider val2;
     ofxFloatSlider smoothing;
+    
+    ofxIntSlider inputSelector;
+    ofxFloatSlider inputSmoother;
+    
+    ofxIntSlider head_postion_offSetY;
+    
+
+    
+    
     
     float rawVal1 = 0.5;
     float rawVal2 = 0.5;

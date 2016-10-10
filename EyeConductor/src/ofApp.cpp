@@ -1,11 +1,9 @@
 /*
 Main project for building Eye Conductor
  
- 
  //Fullscreen
  
  //Draw a basic layout of the different elements on paper before doing anything else...
- 
  
  //Secondary input - preset
  Save selected presets that people can load up
@@ -105,9 +103,18 @@ void ofApp::setup(){
 //    gui.setSize(300, 75);
 //    gui.setDefaultWidth(300);
 //    gui.setDefaultHeight(75);
-    gui.add(val1.setup("output value 1", 0.7, 0.0, 1.0));
-    gui.add(val2.setup("output value 2", 0.7, 0.0, 1.0));
-    gui.add(smoothing.setup("smoothing", 0.85, 0.0, 1.0));
+    gui.add(val1.setup("regression value 1", 0.7, 0.0, 1.0));
+    gui.add(val2.setup("regression value 2", 0.7, 0.0, 1.0));
+    gui.add(smoothing.setup("regression smoothing", 0.85, 0.0, 1.0));
+    
+    gui.add(inputSelector.setup("inputSelector", 0, 0, 3));
+    gui.add(inputSmoother.setup("inputSmoother", 0.85, 0.0, 0.99));
+    
+    gui.add(head_postion_offSetY.setup("head_postion_offSetY", ofGetHeight()/2, 0, ofGetHeight()));
+    
+    
+    
+    
     
     
     
@@ -257,7 +264,7 @@ void ofApp::update(){
         predictionPlot_C.update( pipeline_C.getClassLikelihoods() );
     }
     
-    updateControlPoint(inputSelector, 0.9);
+    updateControlPoint(inputSelector, inputSmoother);
 }
 
 //--------------------------------------------------------------
@@ -720,33 +727,6 @@ void ofApp::keyPressed(int key){
     
 }
 
-//--------------------------------------------------------------
-//void ofApp::updateControlPoint(const int type){
-//    
-//    //Let user can specify input device (MOUSE=0, HEAD_ORIENTATION, HEAD_POSITION, EYE_TRACKER etc) to control the main control point.
-//    
-//    switch( type ){
-//        case MOUSE:
-//            control.x =ofGetMouseX();
-//            control.y =ofGetMouseY();
-//            break;
-//        case HEAD_ORIENTATION:
-//            control.x =ofGetMouseX();
-//            control.y =ofGetMouseY();
-//            break;
-//        case HEAD_POSITION:
-//            control.x =ofGetMouseX();
-//            control.y =ofGetMouseY();
-//            break;
-//        case EYE_TRACKER: //TO DO
-//            //control.x =ofGetMouseX();
-//            //control.y =ofGetMouseY();
-//            break;
-//    }
-//    
-//    
-//
-//}
 
 //--------------------------------------------------------------
 void ofApp::updateControlPoint(int inputSelector, float smoothFactor){
@@ -773,7 +753,7 @@ void ofApp::updateControlPoint(int inputSelector, float smoothFactor){
                 //To do: Make a function so you can (re)set the center of the head in an intelligent (dynamic) way
                 ofPoint centerFacePos = tracker.getInstances()[0].getLandmarks().getImagePoint(27);
                 rawControl.x = ofMap(centerFacePos.x, 0.65*ofGetWidth(), 0.35*ofGetWidth(), 0, ofGetWidth());
-                rawControl.y = ofMap(centerFacePos.y, 0.35*ofGetHeight(), 0.65*ofGetHeight(), 0, ofGetHeight());
+                rawControl.y = ofMap(centerFacePos.y, 0.35*ofGetHeight(), 0.65*ofGetHeight(), 0, ofGetHeight()) + head_postion_offSetY;
             }
             
             break;
