@@ -72,6 +72,10 @@ public:
     ofSoundPlayer  bDrum;
     ofSoundPlayer  sDrum;
     
+    
+    //Notes
+    char notes[15] = { 'C', 'D', 'E', 'F', 'G', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'A', 'B', 'C'};
+    int midiNotes[15] = {48, 50, 52, 53, 55, 57, 59, 60, 62, 64, 65, 67, 69, 71, 72};
 
     //REGRESSION
     enum RegressifierType{ LINEAR_REGRESSION=0, LOGISTIC_REGRESSION, NEURAL_NET, NUM_REGRESSIFIERS };
@@ -210,10 +214,11 @@ public:
     ofxIntSlider inputSelector;
     ofxFloatSlider inputSmoother;
     
+    ofxFloatSlider orientationScaler;
+    ofxFloatSlider positionScalerX;
+    ofxFloatSlider positionScalerY;
+    
     ofxIntSlider head_postion_offSetY;
-    
-
-    
     
     
     float rawVal1 = 0.5;

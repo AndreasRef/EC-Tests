@@ -3,25 +3,29 @@ Main project for building Eye Conductor
  
  //Fullscreen
  
- //Draw a basic layout of the different elements on paper before doing anything else...
- 
- //Secondary input - preset
- Save selected presets that people can load up
- 
- //Secondary input - REGRESSION
+
+ //Control effect - REGRESSION
  Find some effect that could be controlled by a self trained regression model
+ //in midi??
  
  //Transpose everything up/down - CLASSIFICATION
  Transpose up and down using a self trained classifier
  
  //Sound output
- Output MIDI
- Output samples (OK)
+ Output samples
  Output synth
  
  Select more / fever notes in the radial layout
+ 
+ Set the scale
+ 
  Sequencer mode
  
+ 
+ Make a proper triggering of notes. Move stuff away from mousePressed and into update. See how it was done in Processing.
+ (Perhaps just something about saving the lastSelected and checking whether current selected is == lastSelected?)
+ 
+ Try to get ofxEyeTribe running...
  
 */
 
@@ -91,7 +95,6 @@ void ofApp::setup(){
     
     // Setup grabber
     grabber.setup(1280,720);
-    //grabber.setup(960,540);
     
     // Setup tracker
     tracker.setup("../../../model/shape_predictor_68_face_landmarks.dat");
@@ -110,7 +113,13 @@ void ofApp::setup(){
     gui.add(inputSelector.setup("inputSelector", 0, 0, 3));
     gui.add(inputSmoother.setup("inputSmoother", 0.85, 0.0, 0.99));
     
-    gui.add(head_postion_offSetY.setup("head_postion_offSetY", ofGetHeight()/2, 0, ofGetHeight()));
+    gui.add(orientationScaler.setup("orientationScaler", 0.4, 0.0, 0.9));
+    gui.add(positionScalerX.setup("positionScalerX", 0.35, 0.0, 0.49));
+    gui.add(positionScalerY.setup("positionScalerY", 0.35, 0.0, 0.49));
+
+    
+    
+    gui.add(head_postion_offSetY.setup("head_postion_offSetY", 220, 0, ofGetHeight()));
     
     
     
@@ -524,7 +533,7 @@ void ofApp::radialLayoutDraw() {
         
         //Draw text indicating the number/note of all the arcs
         ofSetColor(255);
-        ofDrawBitmapString(ofToString(i), ofGetWidth()/2 + cos(s+ofDegToRad(360/(numOptions*2)))*diam/2.75, ofGetHeight()/2 + sin(s+ofDegToRad(360/(numOptions*2)))*diam/2.75);
+        ofDrawBitmapString(notes[i], ofGetWidth()/2 + cos(s+ofDegToRad(360/(numOptions*2)))*diam/2.75, ofGetHeight()/2 + sin(s+ofDegToRad(360/(numOptions*2)))*diam/2.75);
     }
     
     
@@ -640,7 +649,7 @@ void ofApp::keyPressed(int key){
         case OF_KEY_RETURN:
             setClassifier( ++this->classifierType % NUM_CLASSIFIERS );
             break;
-            
+
         case '1':
             trainingClassLabel_C = 1;
             break;
@@ -741,8 +750,8 @@ void ofApp::updateControlPoint(int inputSelector, float smoothFactor){
         case 1:
             if (tracker.size() > 0) {
                 ofPoint poseOrientation = ofPoint(tracker.getInstances()[0].getPoseMatrix().getRowAsVec3f(2)[0],tracker.getInstances()[0].getPoseMatrix().getRowAsVec3f(2)[1]);
-                rawControl.x = ofMap(poseOrientation.x, -0.4, 0.4, 0, ofGetWidth());
-                rawControl.y = ofMap(poseOrientation.y, -0.25, 0.25, 0, ofGetHeight());
+                rawControl.x = ofMap(poseOrientation.x, -(1-orientationScaler), (1-orientationScaler), 0, ofGetWidth());
+                rawControl.y = ofMap(poseOrientation.y, -(1-orientationScaler), (1-orientationScaler), 0, ofGetHeight());
             }
             
             break;
@@ -752,8 +761,8 @@ void ofApp::updateControlPoint(int inputSelector, float smoothFactor){
             if (tracker.size() > 0) {
                 //To do: Make a function so you can (re)set the center of the head in an intelligent (dynamic) way
                 ofPoint centerFacePos = tracker.getInstances()[0].getLandmarks().getImagePoint(27);
-                rawControl.x = ofMap(centerFacePos.x, 0.65*ofGetWidth(), 0.35*ofGetWidth(), 0, ofGetWidth());
-                rawControl.y = ofMap(centerFacePos.y, 0.35*ofGetHeight(), 0.65*ofGetHeight(), 0, ofGetHeight()) + head_postion_offSetY;
+                rawControl.x = ofMap(centerFacePos.x, (1-positionScalerX)*ofGetWidth(), positionScalerX*ofGetWidth(), 0, ofGetWidth());
+                rawControl.y = ofMap(centerFacePos.y, positionScalerY*ofGetHeight(), (1-positionScalerY)*ofGetHeight(), 0, ofGetHeight()) + head_postion_offSetY; //Multi
             }
             
             break;
@@ -985,9 +994,12 @@ void ofApp::mouseDragged(int x, int y, int button){
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button){
     
+    if (selected >= 0) {
+    
     // scale the ascii values to midi velocity range 0-127
     // see an ascii table: http://www.asciitable.com/
-    note = selected *2 + 48;
+    //note = selected *2 + 48;
+    note = midiNotes[selected] + 12 * (pipeline_C.getPredictedClassLabel()-1); //Scale everything up and down according to classification
     velocity = 122;
     midiOut.sendNoteOn(channel, note,  velocity);
     
@@ -995,6 +1007,7 @@ void ofApp::mousePressed(int x, int y, int button){
     // print out both the midi note and the frequency
     ofLogNotice() << "note: " << note
     << " freq: " << ofxMidi::mtof(note) << " Hz";
+    }
 }
 
 //--------------------------------------------------------------
