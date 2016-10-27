@@ -3,27 +3,14 @@ Main project for building Eye Conductor
  
  //Fullscreen
  
-
- //Control effect - REGRESSION
- Find some effect that could be controlled by a self trained regression model
- //in midi??
- 
- //Transpose everything up/down - CLASSIFICATION
- Transpose up and down using a self trained classifier
- 
  //Sound output
  Output samples
  Output synth
  
  Select more / fever notes in the radial layout
- 
  Set the scale
- 
  Sequencer mode
- 
- 
- Make a proper triggering of notes. Move stuff away from mousePressed and into update. See how it was done in Processing.
- (Perhaps just something about saving the lastSelected and checking whether current selected is == lastSelected?)
+
  
  Try to get ofxEyeTribe running...
  
@@ -123,10 +110,6 @@ void ofApp::setup(){
     
     
     
-    
-    
-    
-    
     //MIDI
     ofSetLogLevel(OF_LOG_VERBOSE);
     
@@ -160,6 +143,13 @@ void ofApp::setup(){
 //--------------------------------------------------------------
 void ofApp::update(){
     
+    
+    
+    if ( selected != prevSelected) {
+        cout << "BANG: " << bangCounter <<  "\n";
+        bangCounter++;
+    }
+    
     ofSoundUpdate();
     
     //FaceTracker2
@@ -173,7 +163,6 @@ void ofApp::update(){
     VectorFloat inputVector(trainingInputs);
     
     if ( tracker.size()>0) {
-        
         
         //RAW (136 values)
         if (rawBool) {
@@ -274,6 +263,22 @@ void ofApp::update(){
     }
     
     updateControlPoint(inputSelector, inputSmoother);
+    
+    
+    if (selected != prevSelected) {
+        midiOut << NoteOff(channel, note, velocity); // stream interface
+    }
+    
+    if (selected >= 0 && selected != prevSelected) {
+        
+        note = midiNotes[selected] + 12 * (pipeline_C.getPredictedClassLabel()-1); //Scale everything up and down according to classification
+        velocity = ofMap(val1, 0, 1, 0, 127);
+        midiOut.sendNoteOn(channel, note,  velocity);
+        ofLogNotice() << "note: " << note
+        << " freq: " << ofxMidi::mtof(note) << " Hz";
+    }
+    
+    prevSelected = selected;
 }
 
 //--------------------------------------------------------------
@@ -299,8 +304,7 @@ void ofApp::draw(){
     radialLayoutDraw();
     
     
-    
-    // Draw estimated 3d pose - //This is still not mirrored... pushMatrix, Scale and Translate does not work...
+    // Draw estimated 3d pose - //This is still not mirrored... pushMatrix, Scale and Translate does not work on ...
     if (drawPose) {
         tracker.drawDebugPose();
     }
@@ -366,9 +370,6 @@ void ofApp::draw(){
             hugeFont.drawString(txt,ofGetWidth()-25-bounds.width,ofGetHeight()-25-bounds.height);
         }
     }
-    
-    
-    
     
     
     
@@ -551,6 +552,9 @@ void ofApp::radialLayoutDraw() {
     ofSetColor(255);
     ofDrawCircle(smoothControl.x, smoothControl.y, 10);
     
+    
+    
+
     
     
 }
@@ -780,6 +784,77 @@ void ofApp::updateControlPoint(int inputSelector, float smoothFactor){
 
 
 
+
+
+
+//--------------------------------------------------------------
+void ofApp::keyReleased(int key){
+    
+}
+
+//--------------------------------------------------------------
+void ofApp::mousePressed(int x, int y, int button){
+    
+    if (selected >= 0) {
+
+    note = midiNotes[selected] + 12 * (pipeline_C.getPredictedClassLabel()-1); //Scale everything up and down according to classification
+    velocity = ofMap(val1, 0, 1, 0, 127);
+    midiOut.sendNoteOn(channel, note,  velocity);
+    // print out both the midi note and the frequency
+    ofLogNotice() << "note: " << note
+    << " freq: " << ofxMidi::mtof(note) << " Hz";
+    }
+}
+
+//--------------------------------------------------------------
+void ofApp::mouseReleased(int x, int y, int button){
+    //midiOut.sendNoteOff(channel, note,  velocity);
+    
+    midiOut << NoteOff(channel, note, velocity); // stream interface
+}
+
+
+
+
+//--------------------------------------------------------------
+float ofApp:: getGesture (Gesture gesture){
+    
+    //Current issues: How to make it scale accordingly?
+    
+    if(tracker.size()<1) {
+        return 0;
+    }
+    int start = 0, end = 0;
+    int gestureMultiplier = 10;
+    
+    
+    switch(gesture) {
+            // left to right of mouth
+        case MOUTH_WIDTH: start = 48; end = 54; break;
+            // top to bottom of inner mouth
+        case MOUTH_HEIGHT: start = 51; end = 57; gestureMultiplier = 10; break;
+            // center of the eye to middle of eyebrow
+        case LEFT_EYEBROW_HEIGHT: start = 38; end = 20; gestureMultiplier = 10; break;
+            // center of the eye to middle of eyebrow
+        case RIGHT_EYEBROW_HEIGHT: start = 43; end = 23; gestureMultiplier = 10; break;
+            // upper inner eye to lower outer eye
+        case LEFT_EYE_OPENNESS: start = 38; end = 40; gestureMultiplier = 25; break;
+            // upper inner eye to lower outer eye
+        case RIGHT_EYE_OPENNESS: start = 43; end = 47; gestureMultiplier = 25; break;
+            // nose center to chin center
+        case JAW_OPENNESS: start = 33; end = 8; break;
+            // left side of nose to right side of nose
+        case NOSTRIL_FLARE: start = 31; end = 35; break;
+    }
+    
+    
+    //Normalized
+    return (gestureMultiplier*abs(abs(tracker.getInstances()[0].getLandmarks().getImagePoint(start).getNormalized().y - tracker.getInstances()[0].getLandmarks().getImagePoint(end).getNormalized().y)));
+    
+    
+}
+
+
 //--------------------------------------------------------------
 bool ofApp::setRegressifier( const int type ){
     
@@ -801,7 +876,7 @@ bool ofApp::setRegressifier( const int type ){
         case NEURAL_NET:
         {
             unsigned int numInputNeurons = trainingData_R.getNumInputDimensions();
-            unsigned int numHiddenNeurons = 10; 
+            unsigned int numHiddenNeurons = 10;
             unsigned int numOutputNeurons = 1; //1 as we are using multidimensional regression
             
             //Initialize the MLP
@@ -938,86 +1013,6 @@ bool ofApp::setClassifier( const int type ){
 }
 
 //--------------------------------------------------------------
-float ofApp:: getGesture (Gesture gesture){
-    
-    //Current issues: How to make it scale accordingly?
-    
-    if(tracker.size()<1) {
-        return 0;
-    }
-    int start = 0, end = 0;
-    int gestureMultiplier = 10;
-    
-    
-    switch(gesture) {
-            // left to right of mouth
-        case MOUTH_WIDTH: start = 48; end = 54; break;
-            // top to bottom of inner mouth
-        case MOUTH_HEIGHT: start = 51; end = 57; gestureMultiplier = 10; break;
-            // center of the eye to middle of eyebrow
-        case LEFT_EYEBROW_HEIGHT: start = 38; end = 20; gestureMultiplier = 10; break;
-            // center of the eye to middle of eyebrow
-        case RIGHT_EYEBROW_HEIGHT: start = 43; end = 23; gestureMultiplier = 10; break;
-            // upper inner eye to lower outer eye
-        case LEFT_EYE_OPENNESS: start = 38; end = 40; gestureMultiplier = 25; break;
-            // upper inner eye to lower outer eye
-        case RIGHT_EYE_OPENNESS: start = 43; end = 47; gestureMultiplier = 25; break;
-            // nose center to chin center
-        case JAW_OPENNESS: start = 33; end = 8; break;
-            // left side of nose to right side of nose
-        case NOSTRIL_FLARE: start = 31; end = 35; break;
-    }
-    
-    
-    //Normalized
-    return (gestureMultiplier*abs(abs(tracker.getInstances()[0].getLandmarks().getImagePoint(start).getNormalized().y - tracker.getInstances()[0].getLandmarks().getImagePoint(end).getNormalized().y)));
-    
-    
-}
-
-
-//--------------------------------------------------------------
-void ofApp::keyReleased(int key){
-    
-}
-
-//--------------------------------------------------------------
-void ofApp::mouseMoved(int x, int y ){
-    
-}
-
-//--------------------------------------------------------------
-void ofApp::mouseDragged(int x, int y, int button){
-    
-}
-
-//--------------------------------------------------------------
-void ofApp::mousePressed(int x, int y, int button){
-    
-    if (selected >= 0) {
-    
-    // scale the ascii values to midi velocity range 0-127
-    // see an ascii table: http://www.asciitable.com/
-    //note = selected *2 + 48;
-    note = midiNotes[selected] + 12 * (pipeline_C.getPredictedClassLabel()-1); //Scale everything up and down according to classification
-    velocity = 122;
-    midiOut.sendNoteOn(channel, note,  velocity);
-    
-    
-    // print out both the midi note and the frequency
-    ofLogNotice() << "note: " << note
-    << " freq: " << ofxMidi::mtof(note) << " Hz";
-    }
-}
-
-//--------------------------------------------------------------
-void ofApp::mouseReleased(int x, int y, int button){
-    //midiOut.sendNoteOff(channel, note,  velocity);
-    
-    midiOut << NoteOff(channel, note, velocity); // stream interface
-}
-
-//--------------------------------------------------------------
 void ofApp::exit() {
     // clean up
     midiOut.closePort();
@@ -1033,7 +1028,4 @@ void ofApp::gotMessage(ofMessage msg){
     
 }
 
-//--------------------------------------------------------------
-void ofApp::dragEvent(ofDragInfo dragInfo){ 
-    
-}
+

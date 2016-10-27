@@ -23,13 +23,10 @@ public:
     
     void keyPressed  (int key);
     void keyReleased(int key);
-    void mouseMoved(int x, int y );
-    void mouseDragged(int x, int y, int button);
     void mousePressed(int x, int y, int button);
     void mouseReleased(int x, int y, int button);
     void exit();
     void windowResized(int w, int h);
-    void dragEvent(ofDragInfo dragInfo);
     void gotMessage(ofMessage msg);
     
     bool setClassifier( const int type );
@@ -57,6 +54,7 @@ public:
     //int inputSelector = 0;
     
     int selected = -1;
+    int prevSelected = selected;
     
     
     //MIDI
@@ -224,5 +222,8 @@ public:
     float rawVal1 = 0.5;
     float rawVal2 = 0.5;
     
+    
+    //DEBUGGING STUFF - CLEAN THIS UP
+    int bangCounter = 0;
     
 };
