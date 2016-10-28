@@ -7,12 +7,11 @@ Main project for building Eye Conductor
  Output samples
  Output synth
  
- Select more / fever notes in the radial layout
  Set the scale
  Sequencer mode
-
  
- Try to get ofxEyeTribe running...
+ Make the recording functions the same for both Regression and Classification. Use the countdown timer, and make a slider for it.
+ Update the info text for the recording functions
  
 */
 
@@ -67,8 +66,7 @@ void ofApp::setup(){
     pipeline_C.setClassifier( naiveBayes );
     
     
-    //Facetracker
-    //Select the inputs: Gestures, orientations or raw inputs
+    //Facetracker - Select the inputs: Gestures, orientations or raw inputs
     rawBool = false;
     gestureBool = true;
     orientationBool = false;
@@ -104,10 +102,10 @@ void ofApp::setup(){
     gui.add(positionScalerX.setup("positionScalerX", 0.35, 0.0, 0.49));
     gui.add(positionScalerY.setup("positionScalerY", 0.35, 0.0, 0.49));
 
-    
-    
     gui.add(head_postion_offSetY.setup("head_postion_offSetY", 220, 0, ofGetHeight()));
     
+    gui.add(numberOfNotes.setup("numberOfNotes", 5, 1, 16));
+    gui.add(transpose.setup("transposeNotes", 0, -6, 6));
     
     
     //MIDI
@@ -143,142 +141,36 @@ void ofApp::setup(){
 //--------------------------------------------------------------
 void ofApp::update(){
     
-    
-    
-    if ( selected != prevSelected) {
-        cout << "BANG: " << bangCounter <<  "\n";
-        bangCounter++;
-    }
-    
+    //UPDATE SOUND, VIDEO AND TRACKER
     ofSoundUpdate();
     
-    //FaceTracker2
     grabber.update();
     
-    // Update tracker when there are new frames
     if(grabber.isFrameNew()){
         tracker.update(grabber);
     }
-    VectorFloat trainingSample(trainingInputs);
-    VectorFloat inputVector(trainingInputs);
     
-    if ( tracker.size()>0) {
-        
-        //RAW (136 values)
-        if (rawBool) {
-            
-            //Send all raw points (68 facepoints with x+y = 136 values) (only 1 face)
-            auto facePoints = tracker.getInstances()[0].getLandmarks().getImageFeature(ofxFaceTracker2Landmarks::ALL_FEATURES);
-            
-            for (int i = 0; i<facePoints.size(); i++) {
-                ofPoint p = facePoints.getVertices()[i].getNormalized(); //only values from 0-1. Experiment with this, and try to send non-normalized as well
-                
-                trainingSample[i] = p.x;
-                trainingSample[i + facePoints.size()] = p.y; //Not that elegant...
-            }
-        }
-        
-        
-        //ORIENTATION (9 values)
-        if (orientationBool) {
-            for (int i = 0; i<=2; i++) {
-                for (int j = 0; j<=2; j++) {
-                    trainingSample[i+RAWINPUTS*rawBool] = tracker.getInstances()[0].getPoseMatrix().getRowAsVec3f(i)[j];
-                }
-            }
-        }
-        
-        
-        //GESTURES (5 values)
-        if (gestureBool) {
-            trainingSample[0+RAWINPUTS*rawBool+ORIENTATIONINPUTS*orientationBool] = getGesture(RIGHT_EYE_OPENNESS);
-            trainingSample[1+RAWINPUTS*rawBool+ORIENTATIONINPUTS*orientationBool] = getGesture(LEFT_EYE_OPENNESS);
-            trainingSample[2+RAWINPUTS*rawBool+ORIENTATIONINPUTS*orientationBool] = getGesture(RIGHT_EYEBROW_HEIGHT);
-            trainingSample[3+RAWINPUTS*rawBool+ORIENTATIONINPUTS*orientationBool] = getGesture(LEFT_EYEBROW_HEIGHT);
-            trainingSample[4+RAWINPUTS*rawBool+ORIENTATIONINPUTS*orientationBool] = getGesture(MOUTH_HEIGHT);
-
-        }
-        
-        
-        //Update the training mode if needed
-        if( trainingModeActive_R){
-            
-            //Check to see if the countdown timer has elapsed, if so then start the recording
-            if( !recordTrainingData_R ){
-                if( trainingTimer_R.timerReached() ){
-                    recordTrainingData_R = true;
-                    trainingTimer_R.start( RECORDING_TIME );
-                }
-            }else{
-                //We should be recording the training data - check to see if we should stop the recording
-                if( trainingTimer_R.timerReached() ){
-                    trainingModeActive_R = false;
-                    recordTrainingData_R = false;
-                }
-            }
-            
-            if( recordTrainingData_R ){
- 
-                VectorFloat targetVector(2);
-                targetVector[0] = val1;
-                targetVector[1] = val2;
-
-                
-                if( !trainingData_R.addSample(trainingSample,targetVector) ){
-                    infoText_R = "WARNING: Failed to add training sample to training data!";
-                }
-            }
-        }
-        
-        inputVector = trainingSample;
-        
-        //Update the prediction mode if active
-        if( predictionModeActive_R ){
-            
-            if( pipeline_R.predict( inputVector ) ){
-                rawVal1 = ofClamp(pipeline_R.getRegressionData()[0],0.0, 1.0);
-                rawVal2 = ofClamp(pipeline_R.getRegressionData()[1],0.0, 1.0);
-
-            }else{
-                infoText_R = "ERROR: Failed to run prediction!";
-            }
-        }
-    }
-    
-    if (predictionModeActive_R) {
-        val1 = val1 + ( rawVal1 - val1 ) * (1- smoothing);
-        val2 = val2 + ( rawVal2 - val2 ) * (1- smoothing);
-    }
-    
-    
-    //If we are recording training data, then add the current sample to the training data set
-    if( record_C ){
-        trainingData_C.addSample( trainingClassLabel_C, trainingSample );
-    }
-    
-    //If the pipeline has been trained, then run the prediction
-    if( pipeline_C.getTrained() && predictionModeActive_C ){
-        pipeline_C.predict( trainingSample );
-        predictionPlot_C.update( pipeline_C.getClassLikelihoods() );
-    }
-    
+    //UPDATE CONTROLPOINT AND ML FUNCTIONS (ofxGRT)
     updateControlPoint(inputSelector, inputSmoother);
+    updateGRT();
     
     
+    //TRIG MIDI
     if (selected != prevSelected) {
         midiOut << NoteOff(channel, note, velocity); // stream interface
     }
     
     if (selected >= 0 && selected != prevSelected) {
         
-        note = midiNotes[selected] + 12 * (pipeline_C.getPredictedClassLabel()-1); //Scale everything up and down according to classification
+        note = midiNotes[selected] + 12 * (pipeline_C.getPredictedClassLabel()-1) + transpose; //Scale everything up and down according to classification
         velocity = ofMap(val1, 0, 1, 0, 127);
         midiOut.sendNoteOn(channel, note,  velocity);
         ofLogNotice() << "note: " << note
         << " freq: " << ofxMidi::mtof(note) << " Hz";
     }
     
-    prevSelected = selected;
+    //
+    prevSelected = selected; //Move this to the end of the radialLayout function?
 }
 
 //--------------------------------------------------------------
@@ -288,9 +180,8 @@ void ofApp::draw(){
     
     //FaceTracker draw
     ofSetColor(255);
+    
     // Draw camera image
-    
-    
     if (drawVideo) {
         
         ofPushMatrix();
@@ -301,15 +192,57 @@ void ofApp::draw(){
     
     }
     
-    radialLayoutDraw();
+    //UPDATE SELECTED NOTE AND DRAW RADIAL LAYOUT (could be splitted into two functions)
+    radialUpdateAndDraw();
     
+    //DRAW FACETRACKING THINGS
+    drawAllTracking();
     
-    // Draw estimated 3d pose - //This is still not mirrored... pushMatrix, Scale and Translate does not work on ...
-    if (drawPose) {
-        tracker.drawDebugPose();
+  
+    
+    //DRAW TRAINING INDICATOR AND COUNTDOWN
+    if( trainingModeActive_R ){
+        if( !recordTrainingData_R ){
+            ofSetColor(255, 204, 0);
+            string txt = "PREP";
+            ofRectangle bounds = hugeFont.getStringBoundingBox(txt,0,0);
+            hugeFont.drawString(txt,ofGetWidth()-25-bounds.width,ofGetHeight()-25-bounds.height);
+        }else{
+            ofSetColor(255,0,0);
+            string txt = "REC";
+            ofRectangle bounds = hugeFont.getStringBoundingBox(txt,0,0);
+            hugeFont.drawString(txt,ofGetWidth()-25-bounds.width,ofGetHeight()-25-bounds.height);
+        }
     }
     
-    //Draw all the individual points / numbers for all tracked faces
+  
+    //DRAW THE INFO TEXT
+    if( drawInfo ){
+        drawAllInfo();
+    }
+    
+    //DRAW CLASSIFICATION PLOTS
+    int graphX = ofGetWidth() - 200 ;
+    int graphY = 5;
+    int graphW = 200;
+    int graphH = 100;
+    
+    if( pipeline_C.getTrained() ){
+        predictionPlot_C.draw( graphX, graphY, graphW, graphH ); graphY += graphH * 1.1;
+    }
+    
+    //DRAW CLASSIFICATION CLASS NUMBER
+    ofSetColor(255);
+    hugeFont.drawString(ofToString(pipeline_C.getPredictedClassLabel()), ofGetWidth()/2-10, ofGetHeight()/2+30);
+
+    gui.draw();
+}
+
+
+
+//--------------------------------------------------------------
+void ofApp::drawAllTracking() {
+    
     for (int i = 0; i<tracker.size(); i ++) {
         
         if(drawFace) {
@@ -345,6 +278,7 @@ void ofApp::draw(){
             ofPopMatrix();
         }
         
+        //DRAW THE NUMBERS
         for (int j = 0; j< tracker.getInstances()[i].getLandmarks().getImagePoints().size(); j++) {
             if (drawNumbers) {
                 ofPushMatrix();
@@ -356,129 +290,100 @@ void ofApp::draw(){
         }
     }
     
-
-    if( trainingModeActive_R ){
-        if( !recordTrainingData_R ){
-            ofSetColor(255, 204, 0);
-            string txt = "PREP";
-            ofRectangle bounds = hugeFont.getStringBoundingBox(txt,0,0);
-            hugeFont.drawString(txt,ofGetWidth()-25-bounds.width,ofGetHeight()-25-bounds.height);
-        }else{
-            ofSetColor(255,0,0);
-            string txt = "REC";
-            ofRectangle bounds = hugeFont.getStringBoundingBox(txt,0,0);
-            hugeFont.drawString(txt,ofGetWidth()-25-bounds.width,ofGetHeight()-25-bounds.height);
-        }
+    // Draw estimated 3d pose - //This is still not mirrored... pushMatrix, Scale and Translate does not work on tracker.drawDebugPose(); ...
+    if (drawPose) {
+        tracker.drawDebugPose();
     }
     
-    
-    
-    
-    //Draw the info text
-    if( drawInfo ){
-        float textX = 10;
-        float textY = 25;
-        float textSpacer = smallFont.getLineHeight() * 1.5;
-        
-        ofFill();
-        ofSetColor(100,100,100);
-        ofDrawRectangle( 5, 5, 290, 720 -8 );
-        ofSetColor( 255, 255, 255 );
+}
 
-        largeFont.drawString( "EYE CONDUCTOR ML EXAMPLE", textX, textY ); textY += textSpacer;
-        
-        smallFont.drawString( "Framerate : "+ofToString(ofGetFrameRate()), textX, textY ); textY += textSpacer;
-        smallFont.drawString( "Tracker thread framerate : "+ofToString(tracker.getThreadFps()), textX, textY ); textY += textSpacer;
-        textY += textSpacer;
-        
-        largeFont.drawString( "GLOBAL CONTROLS", textX, textY ); textY += textSpacer;
-        smallFont.drawString( "[i]: Toogle Info", textX, textY ); textY += textSpacer;
-        smallFont.drawString( "[a] Input all raw points: "+ofToString(rawBool), textX, textY ); textY += textSpacer;
-        smallFont.drawString( "[g] Input gestures: "+ofToString(gestureBool), textX, textY ); textY += textSpacer;
-        smallFont.drawString( "[o] Input orientation: "+ofToString(orientationBool), textX, textY ); textY += textSpacer;
-        smallFont.drawString( "Total input values: "+ofToString(trainingInputs), textX, textY ); textY += textSpacer;
-        textY += textSpacer;
-        
-        smallFont.drawString( "[n] draw numbers: "+ofToString(drawNumbers), textX, textY ); textY += textSpacer;
-        smallFont.drawString( "[f] draw face: "+ofToString(drawFace), textX, textY ); textY += textSpacer;
-        smallFont.drawString( "[p] draw pose: "+ofToString(drawPose), textX, textY ); textY += textSpacer;
-        smallFont.drawString( "[v] draw video: "+ofToString(drawVideo), textX, textY ); textY += textSpacer;
-        textY += textSpacer;
-        
-        //REGRESSION
-        largeFont.drawString( "REGRESSION CONTROLS", textX, textY ); textY += textSpacer;
-        smallFont.drawString( "[r]: Record Sample", textX, textY ); textY += textSpacer;
-        smallFont.drawString( "[l]: Load Model", textX, textY ); textY += textSpacer;
-        smallFont.drawString( "[s]: Save Model", textX, textY ); textY += textSpacer;
-        smallFont.drawString( "[t]: Train Model", textX, textY ); textY += textSpacer;
-        smallFont.drawString( "[d]: Pause Model", textX, textY ); textY += textSpacer;
-        smallFont.drawString( "[c]: Clear Training Data", textX, textY ); textY += textSpacer;
-        smallFont.drawString( "[tab]: Select Regressifier", textX, textY ); textY += textSpacer;
-        textY += textSpacer;
-        
-        smallFont.drawString( "Regressifier: " + regressifierTypeToString( regressifierType ), textX, textY ); textY += textSpacer;
-        
-        smallFont.drawString( "Recording: " + ofToString( recordTrainingData_R ), textX, textY ); textY += textSpacer;
-        smallFont.drawString( "Num Samples: " + ofToString( trainingData_R.getNumSamples() ), textX, textY ); textY += textSpacer;
-        smallFont.drawString( "Prediction mode active: " + ofToString( predictionModeActive_R), textX, textY ); textY += textSpacer;
-        ofSetColor(255,241,0);
-        smallFont.drawString( infoText_R, textX, textY ); textY += textSpacer;
-        ofSetColor(255);
-        textY += textSpacer;
-        
-        
-        //CLASSIFICATION
-        largeFont.drawString( "CLASSIFICATION CONTROLS", textX, textY ); textY += textSpacer;
-        smallFont.drawString( "[1-9]: Set Class Label", textX, textY ); textY += textSpacer;
-        smallFont.drawString( "[R]: Record Sample", textX, textY ); textY += textSpacer;
-        smallFont.drawString( "[L]: Load Model", textX, textY ); textY += textSpacer;
-        smallFont.drawString( "[S]: Save Model", textX, textY ); textY += textSpacer;
-        smallFont.drawString( "[T]: Train Model", textX, textY ); textY += textSpacer;
-        smallFont.drawString( "[D]: Pause Model", textX, textY ); textY += textSpacer;
-        smallFont.drawString( "[C]: Clear Training Data", textX, textY ); textY += textSpacer;
-        smallFont.drawString( "[enter/return]: Select Classifier", textX, textY ); textY += textSpacer*2;
-        
-        smallFont.drawString( "Classifier: " + classifierTypeToString(classifierType), textX, textY ); textY += textSpacer;
-        smallFont.drawString( "Class Label: " + ofToString( trainingClassLabel_C ), textX, textY ); textY += textSpacer;
-        smallFont.drawString( "Recording: " + ofToString( record_C ), textX, textY ); textY += textSpacer;
-        smallFont.drawString( "Num Samples: " + ofToString( trainingData_C.getNumSamples() ), textX, textY ); textY += textSpacer;
-        smallFont.drawString( "Prediction mode active: " + ofToString( predictionModeActive_C), textX, textY ); textY += textSpacer;
-        ofSetColor(255,241,0);
-        smallFont.drawString( infoText_C, textX, textY ); textY += textSpacer;
-        ofSetColor(255);
-        textY += textSpacer;
-        
-        ofSetColor(255);
-        smallFont.drawString( "INSTRUCTIONS REGRESSION: \n \n 1) Set the height and width of the output sliders \n \n 2) Press [r] to record some training samples containing your selected facial features (gestures/orientation/raw points) and output slider values. \n \n 3) Repeat step 1) and 2) with different output slider values and height and different facial expressions / head orientations \n \n 4) Press [t] to train. Move your face and see the changes in the output slider values based on your facial orientation and expression \n \n \n \n 5) INSTRUCTIONS CLASSIFICATION: Like regression but using keys [1-9], [R] (as a toogle) and [T]",  textX, 750 );
-        
-    }
+//--------------------------------------------------------------
+void ofApp::drawAllInfo() {
+
+    float textX = 10;
+    float textY = 25;
+    float textSpacer = smallFont.getLineHeight() * 1.5;
+    
+    ofFill();
+    ofSetColor(100,100,100);
+    ofDrawRectangle( 5, 5, 290, 720 -8 );
+    ofSetColor( 255, 255, 255 );
+    
+    largeFont.drawString( "EYE CONDUCTOR ML EXAMPLE", textX, textY ); textY += textSpacer;
+    
+    smallFont.drawString( "Framerate : "+ofToString(ofGetFrameRate()), textX, textY ); textY += textSpacer;
+    smallFont.drawString( "Tracker thread framerate : "+ofToString(tracker.getThreadFps()), textX, textY ); textY += textSpacer;
+    textY += textSpacer;
+    
+    largeFont.drawString( "GLOBAL CONTROLS", textX, textY ); textY += textSpacer;
+    smallFont.drawString( "[i]: Toogle Info", textX, textY ); textY += textSpacer;
+    smallFont.drawString( "[a] Input all raw points: "+ofToString(rawBool), textX, textY ); textY += textSpacer;
+    smallFont.drawString( "[g] Input gestures: "+ofToString(gestureBool), textX, textY ); textY += textSpacer;
+    smallFont.drawString( "[o] Input orientation: "+ofToString(orientationBool), textX, textY ); textY += textSpacer;
+    smallFont.drawString( "Total input values: "+ofToString(trainingInputs), textX, textY ); textY += textSpacer;
+    textY += textSpacer;
+    
+    smallFont.drawString( "[n] draw numbers: "+ofToString(drawNumbers), textX, textY ); textY += textSpacer;
+    smallFont.drawString( "[f] draw face: "+ofToString(drawFace), textX, textY ); textY += textSpacer;
+    smallFont.drawString( "[p] draw pose: "+ofToString(drawPose), textX, textY ); textY += textSpacer;
+    smallFont.drawString( "[v] draw video: "+ofToString(drawVideo), textX, textY ); textY += textSpacer;
+    textY += textSpacer;
+    
+    //REGRESSION
+    largeFont.drawString( "REGRESSION CONTROLS", textX, textY ); textY += textSpacer;
+    smallFont.drawString( "[r]: Record Sample", textX, textY ); textY += textSpacer;
+    smallFont.drawString( "[l]: Load Model", textX, textY ); textY += textSpacer;
+    smallFont.drawString( "[s]: Save Model", textX, textY ); textY += textSpacer;
+    smallFont.drawString( "[t]: Train Model", textX, textY ); textY += textSpacer;
+    smallFont.drawString( "[d]: Pause Model", textX, textY ); textY += textSpacer;
+    smallFont.drawString( "[c]: Clear Training Data", textX, textY ); textY += textSpacer;
+    smallFont.drawString( "[tab]: Select Regressifier", textX, textY ); textY += textSpacer;
+    textY += textSpacer;
+    
+    smallFont.drawString( "Regressifier: " + regressifierTypeToString( regressifierType ), textX, textY ); textY += textSpacer;
+    
+    smallFont.drawString( "Recording: " + ofToString( recordTrainingData_R ), textX, textY ); textY += textSpacer;
+    smallFont.drawString( "Num Samples: " + ofToString( trainingData_R.getNumSamples() ), textX, textY ); textY += textSpacer;
+    smallFont.drawString( "Prediction mode active: " + ofToString( predictionModeActive_R), textX, textY ); textY += textSpacer;
+    ofSetColor(255,241,0);
+    smallFont.drawString( infoText_R, textX, textY ); textY += textSpacer;
+    ofSetColor(255);
+    textY += textSpacer;
     
     
     //CLASSIFICATION
-    int graphX = ofGetWidth() - 200 ;
-    int graphY = 5;
-    int graphW = 200;
-    int graphH = 100;
+    largeFont.drawString( "CLASSIFICATION CONTROLS", textX, textY ); textY += textSpacer;
+    smallFont.drawString( "[1-9]: Set Class Label", textX, textY ); textY += textSpacer;
+    smallFont.drawString( "[R]: Record Sample", textX, textY ); textY += textSpacer;
+    smallFont.drawString( "[L]: Load Model", textX, textY ); textY += textSpacer;
+    smallFont.drawString( "[S]: Save Model", textX, textY ); textY += textSpacer;
+    smallFont.drawString( "[T]: Train Model", textX, textY ); textY += textSpacer;
+    smallFont.drawString( "[D]: Pause Model", textX, textY ); textY += textSpacer;
+    smallFont.drawString( "[C]: Clear Training Data", textX, textY ); textY += textSpacer;
+    smallFont.drawString( "[enter/return]: Select Classifier", textX, textY ); textY += textSpacer*2;
     
-    if( pipeline_C.getTrained() ){
-        predictionPlot_C.draw( graphX, graphY, graphW, graphH ); graphY += graphH * 1.1;
-    }
+    smallFont.drawString( "Classifier: " + classifierTypeToString(classifierType), textX, textY ); textY += textSpacer;
+    smallFont.drawString( "Class Label: " + ofToString( trainingClassLabel_C ), textX, textY ); textY += textSpacer;
+    smallFont.drawString( "Recording: " + ofToString( record_C ), textX, textY ); textY += textSpacer;
+    smallFont.drawString( "Num Samples: " + ofToString( trainingData_C.getNumSamples() ), textX, textY ); textY += textSpacer;
+    smallFont.drawString( "Prediction mode active: " + ofToString( predictionModeActive_C), textX, textY ); textY += textSpacer;
+    ofSetColor(255,241,0);
+    smallFont.drawString( infoText_C, textX, textY ); textY += textSpacer;
+    ofSetColor(255);
+    textY += textSpacer;
     
     ofSetColor(255);
-    hugeFont.drawString(ofToString(pipeline_C.getPredictedClassLabel()), ofGetWidth()/2-10, ofGetHeight()/2+30);
-
+    smallFont.drawString( "INSTRUCTIONS REGRESSION: \n \n 1) Set the height and width of the output sliders \n \n 2) Press [r] to record some training samples containing your selected facial features (gestures/orientation/raw points) and output slider values. \n \n 3) Repeat step 1) and 2) with different output slider values and height and different facial expressions / head orientations \n \n 4) Press [t] to train. Move your face and see the changes in the output slider values based on your facial orientation and expression \n \n \n \n 5) INSTRUCTIONS CLASSIFICATION: Like regression but using keys [1-9], [R] (as a toogle) and [T]",  textX, 750 );
     
-    gui.draw();
 }
 
-
 //--------------------------------------------------------------
-void ofApp::radialLayoutDraw() {
+void ofApp::radialUpdateAndDraw() { //Split this function into an update function and a draw function at some point?
     
     //RADIAL LAYOUT
     //Layout variables
     float diam =ofGetHeight()*0.9;
-    int numOptions = 5;
+    //int numOptions = 8;
     float innerCircle = ofGetHeight()/8;
     
     
@@ -496,10 +401,10 @@ void ofApp::radialLayoutDraw() {
     //Variables for trigonomitry calculations
     float mouseTheta = atan2(smoothControl.y-ofGetHeight()/2, smoothControl.x-ofGetWidth()/2);
     float piTheta = mouseTheta>=0?mouseTheta:mouseTheta+TWO_PI;
-    float op = numOptions/TWO_PI;
+    float op = numberOfNotes/TWO_PI;
     
     //Run through all the options
-    for (int i=0; i<numOptions; i++) {
+    for (int i=0; i<numberOfNotes; i++) {
         float s = i/op;
         float e = (i+1)/op;
         
@@ -521,20 +426,20 @@ void ofApp::radialLayoutDraw() {
         passiveArcs.setStrokeColor(ofColor(255));
         
         //Draw passive arcs
-        passiveArcs.arc(ofGetWidth()/2,  ofGetHeight()/2,  diam/2, diam/2, 360/numOptions*i, 360/numOptions* i + 360/numOptions);
+        passiveArcs.arc(ofGetWidth()/2,  ofGetHeight()/2,  diam/2, diam/2, 360/numberOfNotes*i, 360/numberOfNotes* i + 360/numberOfNotes);
         passiveArcs.close();
         passiveArcs.draw();
         
         //Draw active arc
         if (selected == i) {
-            activeArc.arc(ofGetWidth()/2,  ofGetHeight()/2,  diam/2, diam/2, 360/numOptions*selected, 360/numOptions* selected + 360/numOptions);
+            activeArc.arc(ofGetWidth()/2,  ofGetHeight()/2,  diam/2, diam/2, 360/numberOfNotes*selected, 360/numberOfNotes* selected + 360/numberOfNotes);
             activeArc.close();
             activeArc.draw();
         }
         
         //Draw text indicating the number/note of all the arcs
         ofSetColor(255);
-        ofDrawBitmapString(notes[i], ofGetWidth()/2 + cos(s+ofDegToRad(360/(numOptions*2)))*diam/2.75, ofGetHeight()/2 + sin(s+ofDegToRad(360/(numOptions*2)))*diam/2.75);
+        ofDrawBitmapString(notes[i], ofGetWidth()/2 + cos(s+ofDegToRad(360/(numberOfNotes*2)))*diam/2.75, ofGetHeight()/2 + sin(s+ofDegToRad(360/(numberOfNotes*2)))*diam/2.75);
     }
     
     
@@ -554,9 +459,6 @@ void ofApp::radialLayoutDraw() {
     
     
     
-
-    
-    
 }
 
 //--------------------------------------------------------------
@@ -566,7 +468,7 @@ void ofApp::keyPressed(int key){
     infoText_C = "";
     bool buildTexture = false;
     
-    switch ( key) {
+    switch (key) {
             
             //GENERAL
         case 'g': //Toogle gesture inputs and update length of trainingInputs
@@ -783,37 +685,114 @@ void ofApp::updateControlPoint(int inputSelector, float smoothFactor){
 
 
 
-
-
-
-
 //--------------------------------------------------------------
-void ofApp::keyReleased(int key){
+void ofApp:: updateGRT() {
     
-}
-
-//--------------------------------------------------------------
-void ofApp::mousePressed(int x, int y, int button){
+    //MACHINE LEARNING W. ofxGRT
+    VectorFloat trainingSample(trainingInputs);
+    VectorFloat inputVector(trainingInputs);
     
-    if (selected >= 0) {
-
-    note = midiNotes[selected] + 12 * (pipeline_C.getPredictedClassLabel()-1); //Scale everything up and down according to classification
-    velocity = ofMap(val1, 0, 1, 0, 127);
-    midiOut.sendNoteOn(channel, note,  velocity);
-    // print out both the midi note and the frequency
-    ofLogNotice() << "note: " << note
-    << " freq: " << ofxMidi::mtof(note) << " Hz";
+    if ( tracker.size()>0) {
+        
+        //RAW (136 values)
+        if (rawBool) {
+            
+            //Send all raw points (68 facepoints with x+y = 136 values) (only 1 face)
+            auto facePoints = tracker.getInstances()[0].getLandmarks().getImageFeature(ofxFaceTracker2Landmarks::ALL_FEATURES);
+            
+            for (int i = 0; i<facePoints.size(); i++) {
+                ofPoint p = facePoints.getVertices()[i].getNormalized(); //only values from 0-1. Experiment with this, and try to send non-normalized as well
+                
+                trainingSample[i] = p.x;
+                trainingSample[i + facePoints.size()] = p.y; //Not that elegant...
+            }
+        }
+        
+        
+        //ORIENTATION (9 values)
+        if (orientationBool) {
+            for (int i = 0; i<=2; i++) {
+                for (int j = 0; j<=2; j++) {
+                    trainingSample[i+RAWINPUTS*rawBool] = tracker.getInstances()[0].getPoseMatrix().getRowAsVec3f(i)[j];
+                }
+            }
+        }
+        
+        
+        //GESTURES (5 values)
+        if (gestureBool) {
+            trainingSample[0+RAWINPUTS*rawBool+ORIENTATIONINPUTS*orientationBool] = getGesture(RIGHT_EYE_OPENNESS);
+            trainingSample[1+RAWINPUTS*rawBool+ORIENTATIONINPUTS*orientationBool] = getGesture(LEFT_EYE_OPENNESS);
+            trainingSample[2+RAWINPUTS*rawBool+ORIENTATIONINPUTS*orientationBool] = getGesture(RIGHT_EYEBROW_HEIGHT);
+            trainingSample[3+RAWINPUTS*rawBool+ORIENTATIONINPUTS*orientationBool] = getGesture(LEFT_EYEBROW_HEIGHT);
+            trainingSample[4+RAWINPUTS*rawBool+ORIENTATIONINPUTS*orientationBool] = getGesture(MOUTH_HEIGHT);
+            
+        }
+        
+        
+        //Update the training mode if needed
+        if( trainingModeActive_R){
+            
+            //Check to see if the countdown timer has elapsed, if so then start the recording
+            if( !recordTrainingData_R ){
+                if( trainingTimer_R.timerReached() ){
+                    recordTrainingData_R = true;
+                    trainingTimer_R.start( RECORDING_TIME );
+                }
+            }else{
+                //We should be recording the training data - check to see if we should stop the recording
+                if( trainingTimer_R.timerReached() ){
+                    trainingModeActive_R = false;
+                    recordTrainingData_R = false;
+                }
+            }
+            
+            if( recordTrainingData_R ){
+                
+                VectorFloat targetVector(2);
+                targetVector[0] = val1;
+                targetVector[1] = val2;
+                
+                
+                if( !trainingData_R.addSample(trainingSample,targetVector) ){
+                    infoText_R = "WARNING: Failed to add training sample to training data!";
+                }
+            }
+        }
+        
+        inputVector = trainingSample;
+        
+        //Update the prediction mode if active
+        if( predictionModeActive_R ){
+            
+            if( pipeline_R.predict( inputVector ) ){
+                rawVal1 = ofClamp(pipeline_R.getRegressionData()[0],0.0, 1.0);
+                rawVal2 = ofClamp(pipeline_R.getRegressionData()[1],0.0, 1.0);
+                
+            }else{
+                infoText_R = "ERROR: Failed to run prediction!";
+            }
+        }
     }
-}
-
-//--------------------------------------------------------------
-void ofApp::mouseReleased(int x, int y, int button){
-    //midiOut.sendNoteOff(channel, note,  velocity);
     
-    midiOut << NoteOff(channel, note, velocity); // stream interface
+    if (predictionModeActive_R) {
+        val1 = val1 + ( rawVal1 - val1 ) * (1- smoothing);
+        val2 = val2 + ( rawVal2 - val2 ) * (1- smoothing);
+    }
+    
+    
+    //If we are recording training data, then add the current sample to the training data set
+    if( record_C ){
+        trainingData_C.addSample( trainingClassLabel_C, trainingSample );
+    }
+    
+    //If the pipeline has been trained, then run the prediction
+    if( pipeline_C.getTrained() && predictionModeActive_C ){
+        pipeline_C.predict( trainingSample );
+        predictionPlot_C.update( pipeline_C.getClassLikelihoods() );
+    }
+    
 }
-
-
 
 
 //--------------------------------------------------------------
@@ -1010,6 +989,21 @@ bool ofApp::setClassifier( const int type ){
     }
     
     return true;
+}
+
+//--------------------------------------------------------------
+void ofApp::keyReleased(int key){
+    
+}
+
+//--------------------------------------------------------------
+void ofApp::mousePressed(int x, int y, int button){
+    
+}
+
+//--------------------------------------------------------------
+void ofApp::mouseReleased(int x, int y, int button){
+    
 }
 
 //--------------------------------------------------------------

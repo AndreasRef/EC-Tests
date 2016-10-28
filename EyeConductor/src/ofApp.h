@@ -32,8 +32,12 @@ public:
     bool setClassifier( const int type );
     bool setRegressifier( const int type );
     
-    void radialLayoutDraw();
+    void updateGRT();
+    void radialUpdateAndDraw();
     void controlPoint(const int type);
+    
+    void drawAllInfo();
+    void drawAllTracking();
     
     //GENERAL
     ofTrueTypeFont largeFont;
@@ -217,6 +221,9 @@ public:
     ofxFloatSlider positionScalerY;
     
     ofxIntSlider head_postion_offSetY;
+    
+    ofxIntSlider numberOfNotes;
+    ofxIntSlider transpose;
     
     
     float rawVal1 = 0.5;
