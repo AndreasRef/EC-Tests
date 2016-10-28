@@ -39,6 +39,9 @@ public:
     void drawAllInfo();
     void drawAllTracking();
     
+    enum scale {major, minor};
+    void printNote(int startingNote, int step, scale scale); //ONLY FOR DEBUGGING
+    
     //GENERAL
     ofTrueTypeFont largeFont;
     ofTrueTypeFont smallFont;
@@ -75,10 +78,18 @@ public:
     ofSoundPlayer  sDrum;
     
     
-    //Notes
-    char notes[15] = { 'C', 'D', 'E', 'F', 'G', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'A', 'B', 'C'};
+    //Simple Notes
+    char notesOld[15] = { 'C', 'D', 'E', 'F', 'G', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'A', 'B', 'C'};
     int midiNotes[15] = {48, 50, 52, 53, 55, 57, 59, 60, 62, 64, 65, 67, 69, 71, 72};
 
+    
+    //PROPER NOTES
+    vector<string> notes{"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
+    
+    int majorScale[7] = {0, 2, 4, 5, 7, 9, 11};
+    int minorScale[7] = {0, 2, 3, 5, 7, 8, 10};
+    
+    
     //REGRESSION
     enum RegressifierType{ LINEAR_REGRESSION=0, LOGISTIC_REGRESSION, NEURAL_NET, NUM_REGRESSIFIERS };
     int regressifierType;

@@ -1,5 +1,5 @@
 /*
-Main project for building Eye Conductor
+ Main project for building Eye Conductor
  
  //Fullscreen
  
@@ -13,7 +13,17 @@ Main project for building Eye Conductor
  Make the recording functions the same for both Regression and Classification. Use the countdown timer, and make a slider for it.
  Update the info text for the recording functions
  
-*/
+ 
+ //Notes and note indicators... - Current issues (October 28th)
+ //The octaves are a bit off, when C is not the root note -> When the transpose % 12 != 0...
+ 
+ // The Octaves are different in the different functions. They are offset... But they do follow each other, so this ought to be a minor adjustment.
+ 
+ //How to do it properly:
+ //Make a function that returns the note name
+ //Make a function that returns the octave
+ 
+ */
 
 #include "ofApp.h"
 
@@ -88,9 +98,9 @@ void ofApp::setup(){
     //GUI
     gui.setup();
     gui.setPosition(ofGetWidth()-200, 110);
-//    gui.setSize(300, 75);
-//    gui.setDefaultWidth(300);
-//    gui.setDefaultHeight(75);
+    //    gui.setSize(300, 75);
+    //    gui.setDefaultWidth(300);
+    //    gui.setDefaultHeight(75);
     gui.add(val1.setup("regression value 1", 0.7, 0.0, 1.0));
     gui.add(val2.setup("regression value 2", 0.7, 0.0, 1.0));
     gui.add(smoothing.setup("regression smoothing", 0.85, 0.0, 1.0));
@@ -101,11 +111,11 @@ void ofApp::setup(){
     gui.add(orientationScaler.setup("orientationScaler", 0.4, 0.0, 0.9));
     gui.add(positionScalerX.setup("positionScalerX", 0.35, 0.0, 0.49));
     gui.add(positionScalerY.setup("positionScalerY", 0.35, 0.0, 0.49));
-
+    
     gui.add(head_postion_offSetY.setup("head_postion_offSetY", 220, 0, ofGetHeight()));
     
     gui.add(numberOfNotes.setup("numberOfNotes", 5, 1, 16));
-    gui.add(transpose.setup("transposeNotes", 0, -6, 6));
+    gui.add(transpose.setup("transposeNotes", 48, 24, 72));
     
     
     //MIDI
@@ -161,16 +171,27 @@ void ofApp::update(){
     }
     
     if (selected >= 0 && selected != prevSelected) {
-        
-        note = midiNotes[selected] + 12 * (pipeline_C.getPredictedClassLabel()-1) + transpose; //Scale everything up and down according to classification
+        note = majorScale[selected % 7 ] + transpose + floor(selected/7)*12; // majorScale
+        //note = midiNotes[selected] + 12 * (pipeline_C.getPredictedClassLabel()-1) + transpose; //Scale everything up and down according to classification
         velocity = ofMap(val1, 0, 1, 0, 127);
         midiOut.sendNoteOn(channel, note,  velocity);
         ofLogNotice() << "note: " << note
         << " freq: " << ofxMidi::mtof(note) << " Hz";
+        printNote (transpose, selected, major);
     }
     
-    //
     prevSelected = selected; //Move this to the end of the radialLayout function?
+}
+
+//--------------------------------------------------------------
+void ofApp::printNote(int startingNote, int step, scale inputscale ){
+    
+    if (inputscale == major) {
+        cout << notes[(startingNote + majorScale[step % 7]) % 12] << " " << (floor((startingNote +  majorScale[step]) / 12) + floor(step/7) -1) << " scale: major" << endl;
+    }
+    else if ( inputscale == minor) {
+        cout << notes[(startingNote + minorScale[step % 7]) % 12] << " " << (floor((startingNote +  minorScale[step]) / 12) + floor(step/7) -1) << " scale: minor" << endl;
+    }
 }
 
 //--------------------------------------------------------------
@@ -189,7 +210,6 @@ void ofApp::draw(){
         ofTranslate(-ofGetWidth(), 0);
         grabber.draw(0, 0); //Default
         ofPopMatrix();
-    
     }
     
     //UPDATE SELECTED NOTE AND DRAW RADIAL LAYOUT (could be splitted into two functions)
@@ -197,8 +217,6 @@ void ofApp::draw(){
     
     //DRAW FACETRACKING THINGS
     drawAllTracking();
-    
-  
     
     //DRAW TRAINING INDICATOR AND COUNTDOWN
     if( trainingModeActive_R ){
@@ -215,7 +233,7 @@ void ofApp::draw(){
         }
     }
     
-  
+    
     //DRAW THE INFO TEXT
     if( drawInfo ){
         drawAllInfo();
@@ -234,10 +252,9 @@ void ofApp::draw(){
     //DRAW CLASSIFICATION CLASS NUMBER
     ofSetColor(255);
     hugeFont.drawString(ofToString(pipeline_C.getPredictedClassLabel()), ofGetWidth()/2-10, ofGetHeight()/2+30);
-
+    
     gui.draw();
 }
-
 
 
 //--------------------------------------------------------------
@@ -299,7 +316,7 @@ void ofApp::drawAllTracking() {
 
 //--------------------------------------------------------------
 void ofApp::drawAllInfo() {
-
+    
     float textX = 10;
     float textY = 25;
     float textSpacer = smallFont.getLineHeight() * 1.5;
@@ -439,7 +456,16 @@ void ofApp::radialUpdateAndDraw() { //Split this function into an update functio
         
         //Draw text indicating the number/note of all the arcs
         ofSetColor(255);
-        ofDrawBitmapString(notes[i], ofGetWidth()/2 + cos(s+ofDegToRad(360/(numberOfNotes*2)))*diam/2.75, ofGetHeight()/2 + sin(s+ofDegToRad(360/(numberOfNotes*2)))*diam/2.75);
+        
+        //if (inputscale == major) {
+      //  cout << notes[(startingNote + majorScale[step % 7]) % 12] << " " << (floor((startingNote // +  majorScale[step]) / 12) + floor(step/7) -1) << " scale: major" << endl;
+    
+        
+        string noteName = notes[(transpose + majorScale[i % 7]) % 12] + " " + ofToString((floor((0 + majorScale[i]) / 12) + floor((transpose+i)/7) -3));
+        
+        ofDrawBitmapString(noteName, ofGetWidth()/2 + cos(s+ofDegToRad(360/(numberOfNotes*2)))*diam/2.75, ofGetHeight()/2 + sin(s+ofDegToRad(360/(numberOfNotes*2)))*diam/2.75);
+        
+//        ofDrawBitmapString(notesOld[i], ofGetWidth()/2 + cos(s+ofDegToRad(360/(numberOfNotes*2)))*diam/2.75, ofGetHeight()/2 + sin(s+ofDegToRad(360/(numberOfNotes*2)))*diam/2.75);
     }
     
     
@@ -450,8 +476,18 @@ void ofApp::radialUpdateAndDraw() { //Split this function into an update functio
     
     //Draw selected text indicator
     ofSetColor(255);
+    //string selectedNote = notes[(48 + majorScale[selected % 7]) % 12] + " " + ofToString((floor((48 +  majorScale[selected]) / 12) + floor(step/7) -1);
+    
+    string selectedNote = "";
+    if (selected < 0) {
+         selectedNote = "no note selected";
+    } else {
+     selectedNote = notes[(transpose + majorScale[selected % 7]) % 12] + " " + ofToString((floor((0 + majorScale[selected]) / 12) + floor((transpose + selected)/7) -3));
+    }
+    
     ofDrawBitmapString("Selected note", ofGetWidth()/2-50, ofGetHeight()/2-50);
-    ofDrawBitmapString(ofToString(selected), ofGetWidth()/2-5, ofGetHeight()/2-25);
+    //ofDrawBitmapString(ofToString(selected), ofGetWidth()/2-5, ofGetHeight()/2-25);
+    ofDrawBitmapString(selectedNote, ofGetWidth()/2-5, ofGetHeight()/2-25);
     
     //Draw control point
     ofSetColor(255);
@@ -508,7 +544,7 @@ void ofApp::keyPressed(int key){
         case 'v':
             drawVideo = !drawVideo;
             break;
-
+            
             
             //REGRESSION
         case 'r':
@@ -533,7 +569,7 @@ void ofApp::keyPressed(int key){
                 infoText_R = "Training data loaded from file";
             }else infoText_R = "WARNING: Failed to load training data from file";
             break;
-        
+            
         case 'd':
             predictionModeActive_R =! predictionModeActive_R;
             infoText_R = "Model paused";
@@ -550,12 +586,12 @@ void ofApp::keyPressed(int key){
             break;
             
             
-        //CLASSIFICATION
+            //CLASSIFICATION
             
         case OF_KEY_RETURN:
             setClassifier( ++this->classifierType % NUM_CLASSIFIERS );
             break;
-
+            
         case '1':
             trainingClassLabel_C = 1;
             break;
@@ -583,13 +619,13 @@ void ofApp::keyPressed(int key){
         case '9':
             trainingClassLabel_C = 9;
             break;
-        
+            
         case 'R':
             
             record_C = !record_C;
             
             break;
-        
+            
         case 'T':
             if( pipeline_C.train( trainingData_C ) ){
                 infoText_C = "Pipeline Trained";
@@ -601,19 +637,19 @@ void ofApp::keyPressed(int key){
                 predictionModeActive_C = true;
             }else infoText_C = "WARNING: Failed to train pipeline";
             break;
-        
+            
         case 'L':
             if( trainingData_C.load( ofToDataPath("TrainingData_C.grt") ) ){
                 infoText_C = "Training data loaded from file";
             }else infoText_C = "WARNING: Failed to load training data from file";
             break;
-
+            
         case 'S':
             if( trainingData_C.save( ofToDataPath("TrainingData_C.grt") ) ){
                 infoText_C = "Training data saved to file";
             }else infoText_C = "WARNING: Failed to save training data to file";
             break;
-        
+            
         case 'C':
             trainingData_C.clear();
             infoText_C = "Training data cleared";
@@ -623,7 +659,7 @@ void ofApp::keyPressed(int key){
             predictionModeActive_C =! predictionModeActive_C;
             infoText_C = "Model paused";
             break;
-        
+            
         case 'H':
             inputSelector = MOUSE;
             break;
@@ -635,7 +671,7 @@ void ofApp::keyPressed(int key){
         case 'K':
             inputSelector = HEAD_POSITION;
             break;
-
+            
         default:
             break;
     }
