@@ -14,11 +14,6 @@
  Update the info text for the recording functions
  
  
- //Notes and note indicators... - Current issues (October 28th)
- //The octaves are a bit off, when C is not the root note -> When the transpose % 12 != 0...
- 
- // The Octaves are different in the different functions. They are offset... But they do follow each other, so this ought to be a minor adjustment.
- 
  //How to do it properly:
  //Make a function that returns the note name
  //Make a function that returns the octave
@@ -443,13 +438,13 @@ void ofApp::radialUpdateAndDraw() { //Split this function into an update functio
         passiveArcs.setStrokeColor(ofColor(255));
         
         //Draw passive arcs
-        passiveArcs.arc(ofGetWidth()/2,  ofGetHeight()/2,  diam/2, diam/2, 360/numberOfNotes*i, 360/numberOfNotes* i + 360/numberOfNotes);
+        passiveArcs.arc(ofGetWidth()/2,  ofGetHeight()/2,  diam/2, diam/2, 360.0/numberOfNotes*i, 360.0/numberOfNotes* i + 360.0/numberOfNotes);
         passiveArcs.close();
         passiveArcs.draw();
         
         //Draw active arc
         if (selected == i) {
-            activeArc.arc(ofGetWidth()/2,  ofGetHeight()/2,  diam/2, diam/2, 360/numberOfNotes*selected, 360/numberOfNotes* selected + 360/numberOfNotes);
+            activeArc.arc(ofGetWidth()/2,  ofGetHeight()/2,  diam/2, diam/2, 360.0/numberOfNotes*selected, 360.0/numberOfNotes* selected + 360.0/numberOfNotes);
             activeArc.close();
             activeArc.draw();
         }
@@ -457,15 +452,12 @@ void ofApp::radialUpdateAndDraw() { //Split this function into an update functio
         //Draw text indicating the number/note of all the arcs
         ofSetColor(255);
         
-        //if (inputscale == major) {
-      //  cout << notes[(startingNote + majorScale[step % 7]) % 12] << " " << (floor((startingNote // +  majorScale[step]) / 12) + floor(step/7) -1) << " scale: major" << endl;
-    
         
-        string noteName = notes[(transpose + majorScale[i % 7]) % 12] + " " + ofToString((floor((0 + majorScale[i]) / 12) + floor((transpose+i)/7) -3));
+        //THE NAME OF THE NOTE (for major scale)
+        string noteName = notes[(transpose + majorScale[i % 7]) % 12] + " " + ofToString(floor((majorScale[i % 7 ] + transpose + floor(i/7)*12)/12)-1);
         
-        ofDrawBitmapString(noteName, ofGetWidth()/2 + cos(s+ofDegToRad(360/(numberOfNotes*2)))*diam/2.75, ofGetHeight()/2 + sin(s+ofDegToRad(360/(numberOfNotes*2)))*diam/2.75);
+        ofDrawBitmapString(noteName, ofGetWidth()/2 + cos(s+ofDegToRad(360/(numberOfNotes*2)))*diam/2.75, ofGetHeight()/2 + sin(s+ofDegToRad(360.0/(numberOfNotes*2)))*diam/2.75);
         
-//        ofDrawBitmapString(notesOld[i], ofGetWidth()/2 + cos(s+ofDegToRad(360/(numberOfNotes*2)))*diam/2.75, ofGetHeight()/2 + sin(s+ofDegToRad(360/(numberOfNotes*2)))*diam/2.75);
     }
     
     
@@ -476,17 +468,16 @@ void ofApp::radialUpdateAndDraw() { //Split this function into an update functio
     
     //Draw selected text indicator
     ofSetColor(255);
-    //string selectedNote = notes[(48 + majorScale[selected % 7]) % 12] + " " + ofToString((floor((48 +  majorScale[selected]) / 12) + floor(step/7) -1);
     
     string selectedNote = "";
     if (selected < 0) {
          selectedNote = "no note selected";
     } else {
-     selectedNote = notes[(transpose + majorScale[selected % 7]) % 12] + " " + ofToString((floor((0 + majorScale[selected]) / 12) + floor((transpose + selected)/7) -3));
+     selectedNote = notes[(transpose + majorScale[selected % 7]) % 12] + " " + ofToString(floor((majorScale[selected % 7 ] + transpose + floor(selected/7)*12)/12)-1);
+        
     }
     
     ofDrawBitmapString("Selected note", ofGetWidth()/2-50, ofGetHeight()/2-50);
-    //ofDrawBitmapString(ofToString(selected), ofGetWidth()/2-5, ofGetHeight()/2-25);
     ofDrawBitmapString(selectedNote, ofGetWidth()/2-5, ofGetHeight()/2-25);
     
     //Draw control point
