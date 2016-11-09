@@ -39,7 +39,8 @@ public:
     void drawAllInfo();
     void drawAllTracking();
     
-    enum scale {major, minor};
+    enum scale {major=0, minor=1};
+    //int selectedScale = minor;
     void printNote(int startingNote, int step, scale scale); //ONLY FOR DEBUGGING
     
     //GENERAL
@@ -78,7 +79,7 @@ public:
     ofSoundPlayer  sDrum;
     
     
-    //Simple Notes
+    //Simple Notes - delete this
     char notesOld[15] = { 'C', 'D', 'E', 'F', 'G', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'A', 'B', 'C'};
     int midiNotes[15] = {48, 50, 52, 53, 55, 57, 59, 60, 62, 64, 65, 67, 69, 71, 72};
 
@@ -89,6 +90,13 @@ public:
     int majorScale[7] = {0, 2, 4, 5, 7, 9, 11};
     int minorScale[7] = {0, 2, 3, 5, 7, 8, 10};
     
+    
+    //TEST WITH MULTIDIMENSIONAL ARRAY FOR NOTES IN BOTH MAJOR AND MINOR SCLAES
+    
+    int testScale[2][7] = {
+        {0, 2, 4, 5, 7, 9, 11}, //majorScale
+        {0, 2, 3, 5, 7, 8, 10} //minorScale
+    };
     
     //REGRESSION
     enum RegressifierType{ LINEAR_REGRESSION=0, LOGISTIC_REGRESSION, NEURAL_NET, NUM_REGRESSIFIERS };
@@ -235,6 +243,7 @@ public:
     
     ofxIntSlider numberOfNotes;
     ofxIntSlider transpose;
+    ofxIntSlider selectedScale;
     
     
     float rawVal1 = 0.5;

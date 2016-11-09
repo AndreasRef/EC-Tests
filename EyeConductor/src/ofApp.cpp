@@ -13,6 +13,7 @@
  Make the recording functions the same for both Regression and Classification. Use the countdown timer, and make a slider for it.
  Update the info text for the recording functions
  
+ //Test it out with minor scale
  
  //How to do it properly:
  //Make a function that returns the note name
@@ -112,6 +113,8 @@ void ofApp::setup(){
     gui.add(numberOfNotes.setup("numberOfNotes", 5, 1, 16));
     gui.add(transpose.setup("transposeNotes", 48, 24, 72));
     
+    gui.add(selectedScale.setup("selectedScale", 0, 0, 1));
+    
     
     //MIDI
     ofSetLogLevel(OF_LOG_VERBOSE);
@@ -166,20 +169,24 @@ void ofApp::update(){
     }
     
     if (selected >= 0 && selected != prevSelected) {
-        note = majorScale[selected % 7 ] + transpose + floor(selected/7)*12; // majorScale
+        //note = majorScale[selected % 7 ] + transpose + floor(selected/7)*12; // majorScale
+        
+        note = testScale[selectedScale][selected % 7] + transpose + floor(selected/7)*12; // flexible scale
+        
+        
         //note = midiNotes[selected] + 12 * (pipeline_C.getPredictedClassLabel()-1) + transpose; //Scale everything up and down according to classification
         velocity = ofMap(val1, 0, 1, 0, 127);
         midiOut.sendNoteOn(channel, note,  velocity);
         ofLogNotice() << "note: " << note
         << " freq: " << ofxMidi::mtof(note) << " Hz";
-        printNote (transpose, selected, major);
+        //printNote (transpose, selected, major);
     }
     
     prevSelected = selected; //Move this to the end of the radialLayout function?
 }
 
 //--------------------------------------------------------------
-void ofApp::printNote(int startingNote, int step, scale inputscale ){
+void ofApp::printNote(int startingNote, int step, scale inputscale ){ //Is this function relevant (or even correct)??
     
     if (inputscale == major) {
         cout << notes[(startingNote + majorScale[step % 7]) % 12] << " " << (floor((startingNote +  majorScale[step]) / 12) + floor(step/7) -1) << " scale: major" << endl;
@@ -454,7 +461,11 @@ void ofApp::radialUpdateAndDraw() { //Split this function into an update functio
         
         
         //THE NAME OF THE NOTE (for major scale)
-        string noteName = notes[(transpose + majorScale[i % 7]) % 12] + " " + ofToString(floor((majorScale[i % 7 ] + transpose + floor(i/7)*12)/12)-1);
+        //string noteName = notes[(transpose + majorScale[i % 7]) % 12] + " " + ofToString(floor((majorScale[i % 7 ] + transpose + floor(i/7)*12)/12)-1);
+        
+        //Test with multidimensional array
+        string noteName = notes[(transpose + testScale[selectedScale][i % 7]) % 12] + " " + ofToString(floor((testScale[selectedScale][i % 7] + transpose + floor(i/7)*12)/12)-1);
+        //testScale
         
         ofDrawBitmapString(noteName, ofGetWidth()/2 + cos(s+ofDegToRad(360/(numberOfNotes*2)))*diam/2.75, ofGetHeight()/2 + sin(s+ofDegToRad(360.0/(numberOfNotes*2)))*diam/2.75);
         
@@ -473,7 +484,7 @@ void ofApp::radialUpdateAndDraw() { //Split this function into an update functio
     if (selected < 0) {
          selectedNote = "no note selected";
     } else {
-     selectedNote = notes[(transpose + majorScale[selected % 7]) % 12] + " " + ofToString(floor((majorScale[selected % 7 ] + transpose + floor(selected/7)*12)/12)-1);
+     selectedNote = notes[(transpose + testScale[selectedScale][selected % 7]) % 12] + " " + ofToString(floor((testScale[selectedScale][selected % 7] + transpose + floor(selected/7)*12)/12)-1);
         
     }
     
