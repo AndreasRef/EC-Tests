@@ -84,7 +84,6 @@ void ofApp::setup(){
     bDrum.setVolume(0.99f);
 
     
-    
     //FACETRACKER
     cam.initGrabber(1280, 720);
     tracker.setup();

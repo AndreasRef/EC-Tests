@@ -73,10 +73,10 @@ public:
     int note, velocity;
     int pan, bend, touch, polytouch;
     
-    //SoundPlayer
-    ofSoundPlayer  synth;
-    ofSoundPlayer  bDrum;
-    ofSoundPlayer  sDrum;
+//    //SoundPlayer
+//    ofSoundPlayer  synth;
+//    ofSoundPlayer  bDrum;
+//    ofSoundPlayer  sDrum;
     
     
     //PROPER NOTES
@@ -250,6 +250,15 @@ public:
     
     float rawVal1 = 0.5;
     float rawVal2 = 0.5;
+    
+    
+    //Samples / SoundPlayer
+    vector<ofSoundPlayer>  synth;
+    vector<float>  volumens;
+    
+    int numSamples = 12;
+    //float vol = 0.99; //DELETE
+    int pos; //DELETE
     
     
     //DEBUGGING STUFF - CLEAN THIS UP

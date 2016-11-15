@@ -1,12 +1,9 @@
 /*
- 
  //What is this?
  - A test of controlling playback of samples so they don't "POP"
  - Making the transition between samples elegant, and support a playback of longer/shorter duration of each sample played.
  
  //To do:
- - Test it with short samples
- - Test it with longer samples
  - Combine it with the radial layout
  
 */
@@ -33,7 +30,7 @@ void ofApp::update(){
     
   for (int i = 0; i< numSamples; i++) {
       if (pos != i && volumens[i] > 0) {
-          volumens[i] -=0.02; //Turn down all samples but the selected one...
+          volumens[i] -=0.01; //Turn down all samples but the selected one...
       }
       synth[i].setVolume(volumens[i]);
   }

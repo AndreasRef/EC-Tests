@@ -1,6 +1,8 @@
 /*
  Main project for building Eye Conductor
  
+ ***TO DO:***
+ 
  //GUI
  Fullscreen
  Hide GUI with keyPressed
@@ -8,8 +10,9 @@
  
  
  //SOUND OUTPUT
- Output samples
- Output synth
+ CHOOSE BETWEEN MORE SAMPLES / RECORD BETTER ONES IN MULTIPLE OCTAVES
+ Make sure that playback of samples triggers the correct notes (not currently the case)...
+ Nice to have: Output synth
  
  
  //MODES
@@ -148,18 +151,27 @@ void ofApp::setup(){
     
     
     //SOUNDPLAYER
-    synth.setMultiPlay(false);
-    synth.load("../../../samples/synth.wav");
-    synth.setVolume(0.99f);
+//    synth.setMultiPlay(false);
+//    synth.load("../../../samples/synth.wav");
+//    synth.setVolume(0.99f);
+//    
+//    sDrum.setMultiPlay(false);
+//    sDrum.load("../../../samples/SD.wav");
+//    sDrum.setVolume(0.99f);
+//    
+//    bDrum.setMultiPlay(false);
+//    bDrum.load("../../../samples/BD.mp3");
+//    bDrum.setVolume(0.99f);
     
-    sDrum.setMultiPlay(false);
-    sDrum.load("../../../samples/SD.wav");
-    sDrum.setVolume(0.99f);
+    synth.resize(numSamples); 
+    volumens.resize(numSamples);
     
-    bDrum.setMultiPlay(false);
-    bDrum.load("../../../samples/BD.mp3");
-    bDrum.setVolume(0.99f);
-    
+    for (int i = 0; i< numSamples; i++) {
+        synth[i].setMultiPlay(true); //Is this necessary?
+        synth[i].load("../../../samples/strings/" + ofToString(i) + ".wav");
+        volumens[i] = 0.99;
+        synth[i].setVolume(volumens[i]);
+    }
 }
 
 //--------------------------------------------------------------
@@ -195,10 +207,16 @@ void ofApp::update(){
         ofLogNotice() << "note: " << note
         << " freq: " << ofxMidi::mtof(note) << " Hz";
         //printNote (transpose, selected, major);
+        
+        
+        //TRIG SAMPLES
+        //MAKE A BOOLEAN TO SELECT MIDI OR SAMPLES
+        volumens[selected] = 0.99;
+        synth[selected].play();
     }
         
         
-    //TRIG SAMPLES TEST
+    
     
     prevSelected = selected; //Move this to the end of the radialLayout function?
     
@@ -209,6 +227,17 @@ void ofApp::update(){
     else if (sequencerMode) {
         
         
+    }
+    
+    
+    //TURN DOWN SAMPLES
+    //MAKE A BOOLEAN TO SELECT MIDI OR SAMPLES
+    
+    for (int i = 0; i< numSamples; i++) {
+        if (selected != i && volumens[i] > 0) {
+            volumens[i] -=0.02; //Turn down all samples but the selected one...
+        }
+        synth[i].setVolume(volumens[i]);
     }
     
 }
@@ -1075,6 +1104,10 @@ void ofApp::mousePressed(int x, int y, int button){
 
 //--------------------------------------------------------------
 void ofApp::mouseReleased(int x, int y, int button){
+    
+    //SOUND TEST - DELETE
+//    volumens[pos] = 0.99;
+//    synth[pos].play();
     
 }
 
