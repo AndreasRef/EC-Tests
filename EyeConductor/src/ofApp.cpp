@@ -10,8 +10,9 @@
  
  
  //SOUND OUTPUT
- CHOOSE BETWEEN MORE SAMPLES / RECORD BETTER ONES IN MULTIPLE OCTAVES
- Make sure that playback of samples triggers the correct notes (not currently the case)...
+ 
+ ->>>> Make sure that playback of samples triggers the correct notes (not currently the case):
+ CHOOSE BETWEEN MORE SAMPLES - Record different instruments
  Nice to have: Output synth
  
  
@@ -115,6 +116,8 @@ void ofApp::setup(){
     
     gui.add(sequencerMode.setup("sequencerMode", false));
     
+    gui.add(midiTrueSamplesFalse.setup("midiTrueSamplesFalse", false));
+    
     gui.add(val1.setup("regression value 1", 0.7, 0.0, 1.0));
     gui.add(val2.setup("regression value 2", 0.7, 0.0, 1.0));
     gui.add(smoothing.setup("regression smoothing", 0.85, 0.0, 1.0));
@@ -129,7 +132,7 @@ void ofApp::setup(){
     gui.add(head_postion_offSetY.setup("head_postion_offSetY", 220, 0, ofGetHeight()));
     
     gui.add(numberOfNotes.setup("numberOfNotes", 5, 1, 16));
-    gui.add(transpose.setup("transposeNotes", 48, 24, 72));
+    gui.add(transpose.setup("transposeNotes", 48, 24, 58));
     
     gui.add(selectedScale.setup("selectedScale", 0, 0, 2));
     
@@ -194,7 +197,7 @@ void ofApp::update(){
     if (sequencerMode == false) {
     
     //TRIG MIDI
-    if (selected != prevSelected) {
+    if (selected != prevSelected && midiTrueSamplesFalse) {
         midiOut << NoteOff(channel, note, velocity);
     }
     
@@ -202,21 +205,18 @@ void ofApp::update(){
         note = musicalScale[selectedScale][selected % 7] + transpose + floor(selected/7)*12; // flexible scale
         
         note += 12 * (pipeline_C.getPredictedClassLabel()); //Transpose octaves according to classification
+        if (midiTrueSamplesFalse) {
         velocity = ofMap(val1, 0, 1, 0, 127);
         midiOut.sendNoteOn(channel, note,  velocity);
         ofLogNotice() << "note: " << note
         << " freq: " << ofxMidi::mtof(note) << " Hz";
         //printNote (transpose, selected, major);
-        
-        
-        //TRIG SAMPLES
-        //MAKE A BOOLEAN TO SELECT MIDI OR SAMPLES
+        } else {    //TRIG SAMPLES
         volumens[selected] = 0.99;
         synth[selected].play();
+        }
     }
-        
-        
-    
+
     
     prevSelected = selected; //Move this to the end of the radialLayout function?
     
@@ -233,13 +233,14 @@ void ofApp::update(){
     //TURN DOWN SAMPLES
     //MAKE A BOOLEAN TO SELECT MIDI OR SAMPLES
     
+    if (midiTrueSamplesFalse == false) {
     for (int i = 0; i< numSamples; i++) {
         if (selected != i && volumens[i] > 0) {
             volumens[i] -=0.02; //Turn down all samples but the selected one...
         }
         synth[i].setVolume(volumens[i]);
     }
-    
+    }
 }
 
 //--------------------------------------------------------------

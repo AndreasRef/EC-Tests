@@ -227,6 +227,7 @@ public:
     ofxPanel gui;
     
     ofxToggle sequencerMode;
+    ofxToggle midiTrueSamplesFalse;
     
     ofxFloatSlider val1;
     ofxFloatSlider val2;
@@ -256,7 +257,7 @@ public:
     vector<ofSoundPlayer>  synth;
     vector<float>  volumens;
     
-    int numSamples = 12;
+    int numSamples = 61;
     //float vol = 0.99; //DELETE
     int pos; //DELETE
     
