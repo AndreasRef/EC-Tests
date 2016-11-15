@@ -39,7 +39,7 @@ public:
     void drawAllInfo();
     void drawAllTracking();
     
-    enum scale {major=0, minor=1};
+    enum scale {major=0, minor=1, mixolydian=2};
     //int selectedScale = minor;
     void printNote(int startingNote, int step, scale scale); //ONLY FOR DEBUGGING
     
@@ -79,23 +79,20 @@ public:
     ofSoundPlayer  sDrum;
     
     
-    //Simple Notes - delete this
-    char notesOld[15] = { 'C', 'D', 'E', 'F', 'G', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'A', 'B', 'C'};
-    int midiNotes[15] = {48, 50, 52, 53, 55, 57, 59, 60, 62, 64, 65, 67, 69, 71, 72};
-
-    
     //PROPER NOTES
     vector<string> notes{"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
     
     int majorScale[7] = {0, 2, 4, 5, 7, 9, 11};
     int minorScale[7] = {0, 2, 3, 5, 7, 8, 10};
+    int mixolydianScale[7] = {0, 2, 4, 5, 7, 9, 10};
     
     
     //TEST WITH MULTIDIMENSIONAL ARRAY FOR NOTES IN BOTH MAJOR AND MINOR SCLAES
     
-    int testScale[2][7] = {
+    int musicalScale[3][7] = {
         {0, 2, 4, 5, 7, 9, 11}, //majorScale
-        {0, 2, 3, 5, 7, 8, 10} //minorScale
+        {0, 2, 3, 5, 7, 8, 10}, //minorScale
+        {0, 2, 4, 5, 7, 9, 10} //mixolydianScale
     };
     
     //REGRESSION
@@ -228,6 +225,9 @@ public:
     
     //GUI
     ofxPanel gui;
+    
+    ofxToggle sequencerMode;
+    
     ofxFloatSlider val1;
     ofxFloatSlider val2;
     ofxFloatSlider smoothing;
@@ -244,6 +244,8 @@ public:
     ofxIntSlider numberOfNotes;
     ofxIntSlider transpose;
     ofxIntSlider selectedScale;
+    
+    ofxToggle blinkTriggering;
     
     
     float rawVal1 = 0.5;

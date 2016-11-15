@@ -211,12 +211,11 @@ void ofApp::draw(){
         if (blinkTrigg && blinkTimer > 10) {
             
             if (selected % 2 == 0) {
-                bDrum.play();
+                synth.play();
             } else if ( selected > 0) {
                 sDrum.play();
             }
             blinkTimer = 0;
-            
             
         } else {
             blinked = false;

@@ -1,23 +1,34 @@
 /*
  Main project for building Eye Conductor
  
- //Fullscreen
+ //GUI
+ Fullscreen
+ Hide GUI with keyPressed
+ Save and load gui settings (see guiExample)
  
- //Sound output
+ 
+ //SOUND OUTPUT
  Output samples
  Output synth
  
- Set the scale
- Sequencer mode
  
+ //MODES
+ Sequencer mode
+ Training mode
+ 
+ 
+ //MISC
  Make the recording functions the same for both Regression and Classification. Use the countdown timer, and make a slider for it.
+ 
  Update the info text for the recording functions
  
- //Test it out with minor scale
+ Rename variables
  
- //How to do it properly:
- //Make a function that returns the note name
- //Make a function that returns the octave
+ Some info text about selected scale?
+ 
+ Better functions for getting the midiNotes?
+ 
+ Trig notes by blinking or hoovering
  
  */
 
@@ -97,6 +108,10 @@ void ofApp::setup(){
     //    gui.setSize(300, 75);
     //    gui.setDefaultWidth(300);
     //    gui.setDefaultHeight(75);
+    
+    
+    gui.add(sequencerMode.setup("sequencerMode", false));
+    
     gui.add(val1.setup("regression value 1", 0.7, 0.0, 1.0));
     gui.add(val2.setup("regression value 2", 0.7, 0.0, 1.0));
     gui.add(smoothing.setup("regression smoothing", 0.85, 0.0, 1.0));
@@ -113,8 +128,9 @@ void ofApp::setup(){
     gui.add(numberOfNotes.setup("numberOfNotes", 5, 1, 16));
     gui.add(transpose.setup("transposeNotes", 48, 24, 72));
     
-    gui.add(selectedScale.setup("selectedScale", 0, 0, 1));
+    gui.add(selectedScale.setup("selectedScale", 0, 0, 2));
     
+    gui.add(blinkTriggering.setup("blinkTriggering", false));
     
     //MIDI
     ofSetLogLevel(OF_LOG_VERBOSE);
@@ -162,27 +178,39 @@ void ofApp::update(){
     updateControlPoint(inputSelector, inputSmoother);
     updateGRT();
     
+    //RADIAL MODE UPDATE
+    if (sequencerMode == false) {
     
     //TRIG MIDI
     if (selected != prevSelected) {
-        midiOut << NoteOff(channel, note, velocity); // stream interface
+        midiOut << NoteOff(channel, note, velocity);
     }
     
     if (selected >= 0 && selected != prevSelected) {
-        //note = majorScale[selected % 7 ] + transpose + floor(selected/7)*12; // majorScale
+        note = musicalScale[selectedScale][selected % 7] + transpose + floor(selected/7)*12; // flexible scale
         
-        note = testScale[selectedScale][selected % 7] + transpose + floor(selected/7)*12; // flexible scale
-        
-        
-        //note = midiNotes[selected] + 12 * (pipeline_C.getPredictedClassLabel()-1) + transpose; //Scale everything up and down according to classification
+        note += 12 * (pipeline_C.getPredictedClassLabel()); //Transpose octaves according to classification
         velocity = ofMap(val1, 0, 1, 0, 127);
         midiOut.sendNoteOn(channel, note,  velocity);
         ofLogNotice() << "note: " << note
         << " freq: " << ofxMidi::mtof(note) << " Hz";
         //printNote (transpose, selected, major);
     }
+        
+        
+    //TRIG SAMPLES TEST
     
     prevSelected = selected; //Move this to the end of the radialLayout function?
+    
+    }
+    
+    //SEQUENCER MODE UPDATE
+    
+    else if (sequencerMode) {
+        
+        
+    }
+    
 }
 
 //--------------------------------------------------------------
@@ -215,7 +243,7 @@ void ofApp::draw(){
     }
     
     //UPDATE SELECTED NOTE AND DRAW RADIAL LAYOUT (could be splitted into two functions)
-    radialUpdateAndDraw();
+    if (sequencerMode == false) radialUpdateAndDraw();
     
     //DRAW FACETRACKING THINGS
     drawAllTracking();
@@ -254,6 +282,11 @@ void ofApp::draw(){
     //DRAW CLASSIFICATION CLASS NUMBER
     ofSetColor(255);
     hugeFont.drawString(ofToString(pipeline_C.getPredictedClassLabel()), ofGetWidth()/2-10, ofGetHeight()/2+30);
+    
+    
+    //DRAW CONTROL POINT
+    ofSetColor(255);
+    ofDrawCircle(smoothControl.x, smoothControl.y, 10);
     
     gui.draw();
 }
@@ -464,8 +497,7 @@ void ofApp::radialUpdateAndDraw() { //Split this function into an update functio
         //string noteName = notes[(transpose + majorScale[i % 7]) % 12] + " " + ofToString(floor((majorScale[i % 7 ] + transpose + floor(i/7)*12)/12)-1);
         
         //Test with multidimensional array
-        string noteName = notes[(transpose + testScale[selectedScale][i % 7]) % 12] + " " + ofToString(floor((testScale[selectedScale][i % 7] + transpose + floor(i/7)*12)/12)-1);
-        //testScale
+        string noteName = notes[(transpose + musicalScale[selectedScale][i % 7]) % 12] + " " + ofToString(floor((musicalScale[selectedScale][i % 7] + transpose + floor(i/7)*12)/12)-1);
         
         ofDrawBitmapString(noteName, ofGetWidth()/2 + cos(s+ofDegToRad(360/(numberOfNotes*2)))*diam/2.75, ofGetHeight()/2 + sin(s+ofDegToRad(360.0/(numberOfNotes*2)))*diam/2.75);
         
@@ -484,16 +516,14 @@ void ofApp::radialUpdateAndDraw() { //Split this function into an update functio
     if (selected < 0) {
          selectedNote = "no note selected";
     } else {
-     selectedNote = notes[(transpose + testScale[selectedScale][selected % 7]) % 12] + " " + ofToString(floor((testScale[selectedScale][selected % 7] + transpose + floor(selected/7)*12)/12)-1);
+     selectedNote = notes[(transpose + musicalScale[selectedScale][selected % 7]) % 12] + " " + ofToString(floor((musicalScale[selectedScale][selected % 7] + transpose + floor(selected/7)*12)/12)-1);
         
     }
     
     ofDrawBitmapString("Selected note", ofGetWidth()/2-50, ofGetHeight()/2-50);
     ofDrawBitmapString(selectedNote, ofGetWidth()/2-5, ofGetHeight()/2-25);
     
-    //Draw control point
-    ofSetColor(255);
-    ofDrawCircle(smoothControl.x, smoothControl.y, 10);
+
     
     
     
@@ -545,6 +575,10 @@ void ofApp::keyPressed(int key){
             
         case 'v':
             drawVideo = !drawVideo;
+            break;
+
+        case 'h':
+            
             break;
             
             
