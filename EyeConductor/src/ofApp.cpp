@@ -10,14 +10,16 @@
  
  
  //SOUND OUTPUT
+ //Kill all sound / MIDI when exiting  the program + when toogling the midiTrueSamplesFalse
  
- ->>>> Make sure that playback of samples triggers the correct notes (not currently the case):
+ 
+ 
  CHOOSE BETWEEN MORE SAMPLES - Record different instruments
  Nice to have: Output synth
  
  
  //MODES
- Sequencer mode
+ -> DO THIS NEXT Sequencer mode
  Training mode
  
  
@@ -154,19 +156,19 @@ void ofApp::setup(){
     
     
     //SOUNDPLAYER
-//    synth.setMultiPlay(false);
-//    synth.load("../../../samples/synth.wav");
-//    synth.setVolume(0.99f);
-//    
-//    sDrum.setMultiPlay(false);
-//    sDrum.load("../../../samples/SD.wav");
-//    sDrum.setVolume(0.99f);
-//    
-//    bDrum.setMultiPlay(false);
-//    bDrum.load("../../../samples/BD.mp3");
-//    bDrum.setVolume(0.99f);
+    //    synth.setMultiPlay(false);
+    //    synth.load("../../../samples/synth.wav");
+    //    synth.setVolume(0.99f);
+    //
+    //    sDrum.setMultiPlay(false);
+    //    sDrum.load("../../../samples/SD.wav");
+    //    sDrum.setVolume(0.99f);
+    //
+    //    bDrum.setMultiPlay(false);
+    //    bDrum.load("../../../samples/BD.mp3");
+    //    bDrum.setVolume(0.99f);
     
-    synth.resize(numSamples); 
+    synth.resize(numSamples);
     volumens.resize(numSamples);
     
     for (int i = 0; i< numSamples; i++) {
@@ -195,52 +197,50 @@ void ofApp::update(){
     
     //RADIAL MODE UPDATE
     if (sequencerMode == false) {
-    
-    //TRIG MIDI
-    if (selected != prevSelected && midiTrueSamplesFalse) {
-        midiOut << NoteOff(channel, note, velocity);
-    }
-    
-    if (selected >= 0 && selected != prevSelected) {
-        note = musicalScale[selectedScale][selected % 7] + transpose + floor(selected/7)*12; // flexible scale
         
-        note += 12 * (pipeline_C.getPredictedClassLabel()); //Transpose octaves according to classification
-        if (midiTrueSamplesFalse) {
-        velocity = ofMap(val1, 0, 1, 0, 127);
-        midiOut.sendNoteOn(channel, note,  velocity);
-        ofLogNotice() << "note: " << note
-        << " freq: " << ofxMidi::mtof(note) << " Hz";
-        //printNote (transpose, selected, major);
-        } else {    //TRIG SAMPLES
-        volumens[selected] = 0.99;
-        synth[selected].play();
+       
+        //Turn of unselected MIDI
+        if (selected != prevSelected && midiTrueSamplesFalse) {
+            midiOut << NoteOff(channel, note, velocity); //Turn of previous midi notes
         }
-    }
-
-    
-    prevSelected = selected; //Move this to the end of the radialLayout function?
-    
+        
+        //Turn down unselected samples
+        if (midiTrueSamplesFalse == false) {
+            for (int i = 0; i< numSamples; i++) {
+                if (((note-24) != i && volumens[i] > 0) || (selected == -1)) {
+                    volumens[i] -=0.02;
+                }
+                synth[i].setVolume(volumens[i]);
+            }
+        }
+        
+        
+        //Trig MIDI / Samples
+        if (selected >= 0 && selected != prevSelected) {
+            note = musicalScale[selectedScale][selected % 7] + transpose + floor(selected/7)*12;
+            
+            note += 12 * (pipeline_C.getPredictedClassLabel()); //Transpose octaves according to classification
+        
+            if (midiTrueSamplesFalse) { //Trig MIDI
+                velocity = ofMap(val1, 0, 1, 0, 127);
+                midiOut.sendNoteOn(channel, note,  velocity);
+                ofLogNotice() << "note: " << note
+                << " freq: " << ofxMidi::mtof(note) << " Hz";
+            
+            } else {    //Trig samples
+                volumens[note-24] = 0.99;
+                synth[note-24].play();
+            }
+        }
+        
+        prevSelected = selected; //Move this to the end of the radialLayout function?
     }
     
     //SEQUENCER MODE UPDATE
-    
     else if (sequencerMode) {
         
-        
     }
     
-    
-    //TURN DOWN SAMPLES
-    //MAKE A BOOLEAN TO SELECT MIDI OR SAMPLES
-    
-    if (midiTrueSamplesFalse == false) {
-    for (int i = 0; i< numSamples; i++) {
-        if (selected != i && volumens[i] > 0) {
-            volumens[i] -=0.02; //Turn down all samples but the selected one...
-        }
-        synth[i].setVolume(volumens[i]);
-    }
-    }
 }
 
 //--------------------------------------------------------------
@@ -544,16 +544,16 @@ void ofApp::radialUpdateAndDraw() { //Split this function into an update functio
     
     string selectedNote = "";
     if (selected < 0) {
-         selectedNote = "no note selected";
+        selectedNote = "no note selected";
     } else {
-     selectedNote = notes[(transpose + musicalScale[selectedScale][selected % 7]) % 12] + " " + ofToString(floor((musicalScale[selectedScale][selected % 7] + transpose + floor(selected/7)*12)/12)-1);
+        selectedNote = notes[(transpose + musicalScale[selectedScale][selected % 7]) % 12] + " " + ofToString(floor((musicalScale[selectedScale][selected % 7] + transpose + floor(selected/7)*12)/12)-1);
         
     }
     
     ofDrawBitmapString("Selected note", ofGetWidth()/2-50, ofGetHeight()/2-50);
     ofDrawBitmapString(selectedNote, ofGetWidth()/2-5, ofGetHeight()/2-25);
     
-
+    
     
     
     
@@ -606,7 +606,7 @@ void ofApp::keyPressed(int key){
         case 'v':
             drawVideo = !drawVideo;
             break;
-
+            
         case 'h':
             
             break;
@@ -1107,8 +1107,8 @@ void ofApp::mousePressed(int x, int y, int button){
 void ofApp::mouseReleased(int x, int y, int button){
     
     //SOUND TEST - DELETE
-//    volumens[pos] = 0.99;
-//    synth[pos].play();
+    //    volumens[pos] = 0.99;
+    //    synth[pos].play();
     
 }
 
