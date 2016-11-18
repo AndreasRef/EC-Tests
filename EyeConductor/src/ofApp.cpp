@@ -10,9 +10,6 @@
  
  
  //SOUND OUTPUT
- //Kill all sound / MIDI when exiting  the program + when toogling the midiTrueSamplesFalse
- 
- 
  
  CHOOSE BETWEEN MORE SAMPLES - Record different instruments
  Nice to have: Output synth
@@ -32,9 +29,7 @@
  
  Some info text about selected scale?
  
- Better functions for getting the midiNotes?
- 
- Trig notes by blinking or hoovering
+ Select the triggering of notes by blinking or hoovering
  
  */
 
@@ -109,6 +104,9 @@ void ofApp::setup(){
     
     
     //GUI
+    
+    //midiTrueSamplesFalse.addListener(this, &ofApp::midiTrueSamplesFalsePressed);
+    
     gui.setup();
     gui.setPosition(ofGetWidth()-200, 110);
     //    gui.setSize(300, 75);
@@ -156,18 +154,6 @@ void ofApp::setup(){
     
     
     //SOUNDPLAYER
-    //    synth.setMultiPlay(false);
-    //    synth.load("../../../samples/synth.wav");
-    //    synth.setVolume(0.99f);
-    //
-    //    sDrum.setMultiPlay(false);
-    //    sDrum.load("../../../samples/SD.wav");
-    //    sDrum.setVolume(0.99f);
-    //
-    //    bDrum.setMultiPlay(false);
-    //    bDrum.load("../../../samples/BD.mp3");
-    //    bDrum.setVolume(0.99f);
-    
     synth.resize(numSamples);
     volumens.resize(numSamples);
     
@@ -178,6 +164,7 @@ void ofApp::setup(){
         synth[i].setVolume(volumens[i]);
     }
 }
+
 
 //--------------------------------------------------------------
 void ofApp::update(){
@@ -198,22 +185,19 @@ void ofApp::update(){
     //RADIAL MODE UPDATE
     if (sequencerMode == false) {
         
-       
         //Turn of unselected MIDI
         if (selected != prevSelected && midiTrueSamplesFalse) {
             midiOut << NoteOff(channel, note, velocity); //Turn of previous midi notes
         }
         
         //Turn down unselected samples
-        if (midiTrueSamplesFalse == false) {
             for (int i = 0; i< numSamples; i++) {
                 if (((note-24) != i && volumens[i] > 0) || (selected == -1)) {
                     volumens[i] -=0.02;
                 }
                 synth[i].setVolume(volumens[i]);
             }
-        }
-        
+
         
         //Trig MIDI / Samples
         if (selected >= 0 && selected != prevSelected) {
@@ -233,7 +217,7 @@ void ofApp::update(){
             }
         }
         
-        prevSelected = selected; //Move this to the end of the radialLayout function?
+        prevSelected = selected;
     }
     
     //SEQUENCER MODE UPDATE
@@ -243,16 +227,6 @@ void ofApp::update(){
     
 }
 
-//--------------------------------------------------------------
-void ofApp::printNote(int startingNote, int step, scale inputscale ){ //Is this function relevant (or even correct)??
-    
-    if (inputscale == major) {
-        cout << notes[(startingNote + majorScale[step % 7]) % 12] << " " << (floor((startingNote +  majorScale[step]) / 12) + floor(step/7) -1) << " scale: major" << endl;
-    }
-    else if ( inputscale == minor) {
-        cout << notes[(startingNote + minorScale[step % 7]) % 12] << " " << (floor((startingNote +  minorScale[step]) / 12) + floor(step/7) -1) << " scale: minor" << endl;
-    }
-}
 
 //--------------------------------------------------------------
 void ofApp::draw(){
@@ -522,6 +496,7 @@ void ofApp::radialUpdateAndDraw() { //Split this function into an update functio
         //Draw text indicating the number/note of all the arcs
         ofSetColor(255);
         
+        //CLEAN UP!!
         
         //THE NAME OF THE NOTE (for major scale)
         //string noteName = notes[(transpose + majorScale[i % 7]) % 12] + " " + ofToString(floor((majorScale[i % 7 ] + transpose + floor(i/7)*12)/12)-1);
@@ -652,8 +627,7 @@ void ofApp::keyPressed(int key){
             break;
             
             
-            //CLASSIFICATION
-            
+        //CLASSIFICATION
         case OF_KEY_RETURN:
             setClassifier( ++this->classifierType % NUM_CLASSIFIERS );
             break;
@@ -687,9 +661,7 @@ void ofApp::keyPressed(int key){
             break;
             
         case 'R':
-            
             record_C = !record_C;
-            
             break;
             
         case 'T':
@@ -784,7 +756,6 @@ void ofApp::updateControlPoint(int inputSelector, float smoothFactor){
     smoothControl.x = smoothControl.x + (1-smoothFactor) * (rawControl.x-smoothControl.x);
     smoothControl.y = smoothControl.y + (1-smoothFactor) * (rawControl.y-smoothControl.y);
 }
-
 
 
 //--------------------------------------------------------------
@@ -893,7 +864,6 @@ void ofApp:: updateGRT() {
         pipeline_C.predict( trainingSample );
         predictionPlot_C.update( pipeline_C.getClassLikelihoods() );
     }
-    
 }
 
 
@@ -928,10 +898,8 @@ float ofApp:: getGesture (Gesture gesture){
         case NOSTRIL_FLARE: start = 31; end = 35; break;
     }
     
-    
     //Normalized
     return (gestureMultiplier*abs(abs(tracker.getInstances()[0].getLandmarks().getImagePoint(start).getNormalized().y - tracker.getInstances()[0].getLandmarks().getImagePoint(end).getNormalized().y)));
-    
     
 }
 
@@ -1106,15 +1074,12 @@ void ofApp::mousePressed(int x, int y, int button){
 //--------------------------------------------------------------
 void ofApp::mouseReleased(int x, int y, int button){
     
-    //SOUND TEST - DELETE
-    //    volumens[pos] = 0.99;
-    //    synth[pos].play();
     
 }
 
 //--------------------------------------------------------------
 void ofApp::exit() {
-    // clean up
+    midiOut << NoteOff(channel, note, velocity); //Turn of previous midi note
     midiOut.closePort();
 }
 

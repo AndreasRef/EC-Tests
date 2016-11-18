@@ -40,15 +40,13 @@ public:
     void drawAllTracking();
     
     enum scale {major=0, minor=1, mixolydian=2};
-    //int selectedScale = minor;
-    void printNote(int startingNote, int step, scale scale); //ONLY FOR DEBUGGING
+    
     
     //GENERAL
     ofTrueTypeFont largeFont;
     ofTrueTypeFont smallFont;
     ofTrueTypeFont hugeFont;
     bool drawInfo;
-    
     
     
     //CONTROLPOINT
@@ -73,21 +71,14 @@ public:
     int note, velocity;
     int pan, bend, touch, polytouch;
     
-//    //SoundPlayer
-//    ofSoundPlayer  synth;
-//    ofSoundPlayer  bDrum;
-//    ofSoundPlayer  sDrum;
-    
-    
-    //PROPER NOTES
+
+    //NOTES AND SCALES
     vector<string> notes{"C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"};
     
-    int majorScale[7] = {0, 2, 4, 5, 7, 9, 11};
-    int minorScale[7] = {0, 2, 3, 5, 7, 8, 10};
-    int mixolydianScale[7] = {0, 2, 4, 5, 7, 9, 10};
+//    int majorScale[7] = {0, 2, 4, 5, 7, 9, 11};
+//    int minorScale[7] = {0, 2, 3, 5, 7, 8, 10};
+//    int mixolydianScale[7] = {0, 2, 4, 5, 7, 9, 10};
     
-    
-    //TEST WITH MULTIDIMENSIONAL ARRAY FOR NOTES IN BOTH MAJOR AND MINOR SCLAES
     
     int musicalScale[3][7] = {
         {0, 2, 4, 5, 7, 9, 11}, //majorScale
@@ -105,7 +96,6 @@ public:
     bool recordTrainingData_R;                                //This is a flag that keeps track of when we should record training data
     bool trainingModeActive_R;
     bool predictionModeActive_R;
-    
     
     
     GRT::VectorFloat targetVector;              //This will hold the current label for when we are training the classifier //DON'T KNOW IF IT IS NEEDED??
@@ -130,7 +120,6 @@ public:
     
     
     //CLASSIFICATION
-    
     bool predictionModeActive_C;
     ClassificationData trainingData_C;      		//This will store our training data
     GestureRecognitionPipeline pipeline_C;        //This is a wrapper for our classifier and any pre/post processing modules
@@ -188,8 +177,7 @@ public:
     }
     
     
-    //FaceTracker2 stuff
-    
+    //FACETRACKER2
     enum inputSelector{ GESTUREINPUTS=5, ORIENTATIONINPUTS=9, RAWINPUTS=136 };
     
     int trainingInputs = 5;
@@ -205,7 +193,6 @@ public:
     float getGesture (Gesture gesture);
     
     
-    
     ofxFaceTracker2 tracker;
     ofVideoGrabber grabber;
     
@@ -218,10 +205,6 @@ public:
     bool drawPose;
     bool drawVideo;
     
-    
-    //Debug stuff
-    int numOrientationValues = 0;
-    int numRawValues = 0;
     
     //GUI
     ofxPanel gui;
@@ -253,16 +236,9 @@ public:
     float rawVal2 = 0.5;
     
     
-    //Samples / SoundPlayer
+    //SAMPLES VIA SOUNDPLAYER
     vector<ofSoundPlayer>  synth;
     vector<float>  volumens;
-    
     int numSamples = 61;
-    //float vol = 0.99; //DELETE
-    int pos; //DELETE
-    
-    
-    //DEBUGGING STUFF - CLEAN THIS UP
-    int bangCounter = 0;
     
 };
