@@ -5,6 +5,10 @@
 //--------------------------------------------------------------
 void ofApp::setup(){
     ofSoundStreamSetup(2,0,this,44100,512,4);
+    bpm.addListener(this, &ofApp::bpmChanged);
+    gui.setup();
+    gui.setPosition(ofGetWidth()-210, 10);
+    gui.add(bpm.setup("bpm", 120, 30, 300));
 }
 
 //--------------------------------------------------------------
@@ -16,7 +20,7 @@ void ofApp::update(){
 void ofApp::draw(){
     
     ofBackground(255);
-    int bpm = 121;
+    //bpm = 121;
     
     if (floor(currentTime*bpm/60.0) >= lastTime) {
         lastTime = seconds*bpm/60.0;
@@ -25,7 +29,14 @@ void ofApp::draw(){
         count +=1;
         cout<< "tick " << count <<endl;
     }
-    ofDrawBitmapString(bpm, 10, 20);
+    //ofDrawBitmapString(bpm.get, 10, 20);
+    
+    gui.draw();
+}
+
+//--------------------------------------------------------------
+void ofApp::bpmChanged(int &bpm){
+    lastTime = 0;
 }
 
 //--------------------------------------------------------------
@@ -40,16 +51,18 @@ void ofApp::audioOut(ofSoundBuffer & buffer){
     for (int n=0; n<max; ++n){
         samples[n] = 0.0f;
     }
+    
+    
 }
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
-
+    
 }
 
 //--------------------------------------------------------------
 void ofApp::keyReleased(int key){
-
+    
 }
 
 //--------------------------------------------------------------
@@ -58,40 +71,40 @@ void ofApp::mouseMoved(int x, int y ){
 
 //--------------------------------------------------------------
 void ofApp::mouseDragged(int x, int y, int button){
-
+    
 }
 
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button){
-
+    
 }
 
 //--------------------------------------------------------------
 void ofApp::mouseReleased(int x, int y, int button){
-
+    
 }
 
 //--------------------------------------------------------------
 void ofApp::mouseEntered(int x, int y){
-
+    
 }
 
 //--------------------------------------------------------------
 void ofApp::mouseExited(int x, int y){
-
+    
 }
 
 //--------------------------------------------------------------
 void ofApp::windowResized(int w, int h){
-
+    
 }
 
 //--------------------------------------------------------------
 void ofApp::gotMessage(ofMessage msg){
-
+    
 }
 
 //--------------------------------------------------------------
-void ofApp::dragEvent(ofDragInfo dragInfo){ 
-
+void ofApp::dragEvent(ofDragInfo dragInfo){
+    
 }
